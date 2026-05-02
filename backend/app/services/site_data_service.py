@@ -135,9 +135,8 @@ def get_site_data() -> SiteDataResponse:
         race_copy = race.copy()
         if race_copy["status"] == "completed":
             year = int(race_copy["date"].split("-")[0])
-            fetch_year = 2024 if year == 2026 else year
-            # User wants to fetch real winners from FastF1
-            fastf1_data = _fetch_fastf1_results(fetch_year, race_copy["name"])
+            # User wants to fetch real winners from FastF1 (which pulls from the mocked 2026 cache)
+            fastf1_data = _fetch_fastf1_results(year, race_copy["name"])
             if fastf1_data:
                 race_copy["winner"] = fastf1_data["winner"]
                 race_copy["podium"] = fastf1_data["podium"]
