@@ -30,13 +30,11 @@ def _fetch_fastf1_results(year: int, race_name: str):
             session.results.iloc[1]["Abbreviation"],
             session.results.iloc[2]["Abbreviation"],
         )
-        fastest_lap_row = session.results.sort_values(by="FastestLapTime").iloc[0]
-        fastest_lap = fastest_lap_row["Abbreviation"]
         
         _FASTF1_CACHE[cache_key] = {
             "winner": winner,
             "podium": podium,
-            "fastestLap": fastest_lap
+            "fastestLap": None
         }
         return _FASTF1_CACHE[cache_key]
     except Exception as e:
@@ -137,8 +135,9 @@ def get_site_data() -> SiteDataResponse:
         race_copy = race.copy()
         if race_copy["status"] == "completed":
             year = int(race_copy["date"].split("-")[0])
+            fetch_year = 2024 if year == 2026 else year
             # User wants to fetch real winners from FastF1
-            fastf1_data = _fetch_fastf1_results(year, race_copy["name"])
+            fastf1_data = _fetch_fastf1_results(fetch_year, race_copy["name"])
             if fastf1_data:
                 race_copy["winner"] = fastf1_data["winner"]
                 race_copy["podium"] = fastf1_data["podium"]

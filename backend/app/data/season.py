@@ -49,9 +49,6 @@ RACES = [
         "laps": 58,
         "lengthKm": 5.278,
         "status": "completed",
-        "winner": "HAM",
-        "podium": ("HAM", "VER", "NOR"),
-        "fastestLap": "HAM",
         "winnerImage": "/images/winners/australian-grand-prix-2026.jpg",
     },
     {
@@ -65,9 +62,6 @@ RACES = [
         "laps": 56,
         "lengthKm": 5.451,
         "status": "completed",
-        "winner": "NOR",
-        "podium": ("NOR", "PIA", "LEC"),
-        "fastestLap": "PIA",
         "winnerImage": "/images/winners/chinese-grand-prix-2026.jpg",
     },
     {
@@ -81,9 +75,6 @@ RACES = [
         "laps": 53,
         "lengthKm": 5.807,
         "status": "completed",
-        "winner": "VER",
-        "podium": ("VER", "NOR", "HAM"),
-        "fastestLap": "VER",
         "winnerImage": "/images/winners/japanese-grand-prix-2026.jpg",
     },
     {
