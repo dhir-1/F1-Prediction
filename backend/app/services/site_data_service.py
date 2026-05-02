@@ -1,46 +1,11 @@
 import json
-import logging
 from pathlib import Path
 
-from app.core.config import PREDICTIONS_DIR, CACHE_DIR
+from app.core.config import PREDICTIONS_DIR
 from app.data.season import DRIVERS, FEATURE_DETAILS, FEATURE_LABELS, RACES, TECH_STACK
 from app.models.site import RacePrediction, SiteDataResponse
 
 RACES_BY_ROUND = {race["round"]: race for race in RACES}
-
-_FASTF1_CACHE = {}
-
-def _fetch_fastf1_results(year: int, race_name: str):
-    cache_key = f"{year}-{race_name}"
-    if cache_key in _FASTF1_CACHE:
-        return _FASTF1_CACHE[cache_key]
-
-    try:
-        import fastf1
-        # Enable caching to avoid slow downloads
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        fastf1.Cache.enable_cache(str(CACHE_DIR))
-
-        session = fastf1.get_session(year, race_name, 'R')
-        session.load(laps=False, telemetry=False, weather=False, messages=False)
-        
-        winner = session.results.iloc[0]["Abbreviation"]
-        podium = (
-            session.results.iloc[0]["Abbreviation"],
-            session.results.iloc[1]["Abbreviation"],
-            session.results.iloc[2]["Abbreviation"],
-        )
-        
-        _FASTF1_CACHE[cache_key] = {
-            "winner": winner,
-            "podium": podium,
-            "fastestLap": None
-        }
-        return _FASTF1_CACHE[cache_key]
-    except Exception as e:
-        logging.warning(f"Failed to fetch FastF1 data for {year} {race_name}: {e}")
-        _FASTF1_CACHE[cache_key] = None
-        return None
 
 
 def _prediction_files() -> list[Path]:
@@ -130,23 +95,10 @@ def _load_predictions() -> list[RacePrediction]:
 
 
 def get_site_data() -> SiteDataResponse:
-    updated_races = []
-    for race in RACES:
-        race_copy = race.copy()
-        if race_copy["status"] == "completed":
-            year = int(race_copy["date"].split("-")[0])
-            # User wants to fetch real winners from FastF1 (which pulls from the mocked 2026 cache)
-            fastf1_data = _fetch_fastf1_results(year, race_copy["name"])
-            if fastf1_data:
-                race_copy["winner"] = fastf1_data["winner"]
-                race_copy["podium"] = fastf1_data["podium"]
-                race_copy["fastestLap"] = fastf1_data["fastestLap"]
-        updated_races.append(race_copy)
-
     return SiteDataResponse.model_validate(
         {
             "drivers": DRIVERS,
-            "races": updated_races,
+            "races": RACES,
             "featureDetails": FEATURE_DETAILS,
             "techStack": TECH_STACK,
             "predictions": [prediction.model_dump() for prediction in _load_predictions()],
