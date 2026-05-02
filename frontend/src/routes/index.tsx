@@ -84,7 +84,7 @@ function Index() {
               {new Date(next.date).toDateString()}
             </div>
             {nextRacePrediction && (
-              <Link to="/prediction" className="btn-stamp mt-4 inline-block text-xs">
+              <Link to={`/predictions/${nextRacePrediction.slug}`} className="btn-stamp mt-4 inline-block text-xs">
                 View Prediction →
               </Link>
             )}
@@ -124,7 +124,7 @@ function Index() {
               return (
                 <Link
                   key={pred.slug}
-                  to="/prediction"
+                  to={`/predictions/${pred.slug}`}
                   className="border border-black/15 p-4 hover:bg-black/5 transition-colors group"
                 >
                   <div className="flex items-start justify-between gap-2">

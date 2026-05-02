@@ -7,68 +7,62 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About the Model - Dhir's Pit Wall" },
-      { name: "description", content: "How the prediction model works: features, training, and evaluation." },
-      { property: "og:title", content: "About the Model - Dhir's Pit Wall" },
-      { property: "og:description", content: "How the prediction model works." },
+      { name: "description", content: "How the F1 2026 prediction model works: features, training, and evaluation." },
     ],
   }),
   component: AboutPage,
 });
 
 function AboutPage() {
-  const siteData = useSiteData();
+  const { featureDetails, techStack, predictions, races } = useSiteData();
+  
+  const completedRaces = races.filter((r) => r.status === "completed");
+  const trainingRows = completedRaces.length * 22; // 22 drivers per race
+  const latestPrediction = predictions[predictions.length - 1];
 
   return (
     <PageShell>
-      <section className="px-6 md:px-16 py-20">
-        <div className="text-tag mb-4">Documentation</div>
-        <h1 className="font-poster leading-[0.85] text-[12vw] md:text-[9rem] tracking-wider">
+      <section className="px-4 md:px-8 py-10">
+        <div className="text-tag mb-2">Documentation</div>
+        <h1 className="font-poster leading-[0.85] text-[12vw] md:text-[8rem] tracking-wider">
           ABOUT THE <span className="text-[var(--redorange)] italic">MODEL</span>
         </h1>
       </section>
 
       <Checker />
 
-      <section className="px-6 md:px-16 py-16 grid md:grid-cols-2 gap-12">
-        <div className="space-y-4 text-base leading-relaxed">
+      <section className="px-4 md:px-8 py-10 grid md:grid-cols-2 gap-8">
+        <div className="space-y-4 text-sm leading-relaxed">
           <div className="text-tag">The Approach</div>
           <p>
-            Dhir's Pit Wall uses FastF1 race data from Australia, China, and Japan to build a
-            small driver-by-driver training table for the 2026 season. Each row is engineered from
-            information that should be knowable before lights out, then scored by a shortlist of
-            models including XGBoost and Random Forest.
+            Dhir's Pit Wall uses FastF1 race data from earlier rounds to build a driver-by-driver training table for the 2026 season. Each row is engineered from information that should be knowable before lights out, then scored by a shortlist of models including XGBoost and Random Forest.
           </p>
           <p>
-            The current Miami page is intentionally honest about the sample size. With only 66
-            training rows, the goal is not to pretend we have certainty. The model is there to
-            support the call, surface the strongest signals, and make the reasoning visible.
+            The project is intentionally honest about the sample size. The model is there to support the call, surface the strongest signals, and make the reasoning visible — not to pretend we have absolute certainty.
           </p>
           <p>
-            Miami is the first weekend under the new energy management regulations, so the feature
-            set includes a dedicated regulation flag. When qualifying is complete, rerunning
-            `backend/scripts/generate_prediction.py` swaps the estimated grid for the real one and
-            upgrades the site from pre-qualifying to final prediction mode.
+            Each prediction page is published in a "Pre-Qualifying" state using estimated grid slots, then updated to a "Final Forecast" state once real grid positions are set. 
           </p>
         </div>
-        <div className="md:border-l-2 md:border-[var(--redorange)] md:pl-12 flex items-center">
-          <p className="font-serif italic text-3xl md:text-5xl leading-tight text-[var(--redorange)]">
-            "66 rows. 3 races. 12 features plus the Miami regs flag."
+        <div className="md:border-l-2 md:border-[var(--redorange)] md:pl-8 flex items-center">
+          <p className="font-serif italic text-2xl md:text-4xl leading-tight text-[var(--redorange)]">
+            "{trainingRows} rows. {completedRaces.length} races. {featureDetails.length} engineered features."
           </p>
         </div>
       </section>
 
       <Checker />
 
-      <section className="px-6 md:px-16 py-16">
-        <div className="text-tag mb-3">The Feature Set</div>
-        <h2 className="font-poster text-5xl md:text-7xl mb-10 tracking-wider">WHAT IT KNOWS</h2>
+      <section className="px-4 md:px-8 py-10">
+        <div className="text-tag mb-2">The Feature Set</div>
+        <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">WHAT IT KNOWS</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {siteData.featureDetails.map((feature) => (
-            <div key={feature.key} className="border border-black/20 p-5">
-              <div className="font-mono text-[11px] tracking-widest uppercase text-[var(--redorange)] font-bold">
+          {featureDetails.map((feature) => (
+            <div key={feature.key} className="border border-black/20 p-4">
+              <div className="font-mono text-[10px] tracking-widest uppercase text-[var(--redorange)] font-bold">
                 {feature.name}
               </div>
-              <p className="text-sm mt-2 leading-relaxed">{feature.description}</p>
+              <p className="text-xs mt-2 leading-relaxed opacity-80">{feature.description}</p>
             </div>
           ))}
         </div>
@@ -76,61 +70,75 @@ function AboutPage() {
 
       <Checker />
 
-      <section className="bg-[var(--charcoal)] text-[var(--cream)] px-6 md:px-16 py-16">
-        <div className="text-tag mb-3">Validation Strategy</div>
-        <h2 className="font-poster text-5xl md:text-7xl mb-10 tracking-wider">LEAVE-ONE-RACE-OUT</h2>
-        <div className="flex items-center justify-center gap-2 md:gap-6 flex-wrap">
-          {[
-            { code: "AUS", role: "TRAIN" },
-            { code: "CHN", role: "TRAIN" },
-            { code: "JPN", role: "TEST" },
-          ].map((block, index) => (
-            <div key={block.code} className="flex items-center gap-2 md:gap-6">
+      <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-10">
+        <div className="text-tag mb-2">Validation Strategy</div>
+        <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">LEAVE-ONE-RACE-OUT</h2>
+        <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+          {completedRaces.slice(-3).map((race, index, arr) => (
+            <div key={race.round} className="flex items-center gap-2 md:gap-4">
               <div
-                className={`border-2 px-6 md:px-10 py-6 md:py-10 ${block.role === "TEST" ? "border-[var(--redorange)] bg-[var(--redorange)]/15" : "border-white/30"}`}
+                className={`border-2 px-4 md:px-6 py-4 md:py-6 ${index === arr.length - 1 ? "border-[var(--redorange)] bg-[var(--redorange)]/15" : "border-white/30"}`}
               >
-                <div className="font-poster text-4xl md:text-6xl tracking-widest">{block.code}</div>
-                <div className="font-mono text-[10px] tracking-widest mt-1 opacity-70">{block.role}</div>
+                <div className="font-poster text-3xl md:text-5xl tracking-widest">{race.flag}</div>
+                <div className="font-mono text-[9px] tracking-widest mt-1 opacity-70">
+                  {index === arr.length - 1 ? "TEST" : "TRAIN"}
+                </div>
               </div>
-              {index < 2 && <div className="font-mono text-2xl opacity-60">-&gt;</div>}
+              {index < arr.length - 1 && <div className="font-mono text-xl opacity-60">-&gt;</div>}
             </div>
           ))}
+          {completedRaces.length < 3 && (
+            <div className="text-sm font-mono opacity-50 ml-4 border border-white/20 px-4 py-2">
+              Waiting for more races to build the LORO pipeline.
+            </div>
+          )}
         </div>
-        <div className="text-center mt-6 font-mono text-[10px] tracking-widest opacity-50 uppercase">
-          Each round rotates through the test slot so Miami is always predicted from earlier races.
+        <div className="mt-4 font-mono text-[9px] tracking-widest opacity-50 uppercase">
+          Each round rotates through the test slot so the next race is always predicted from prior ones.
         </div>
       </section>
 
       <Checker />
 
-      <section className="px-6 md:px-16 py-16">
-        <div className="text-tag mb-3">Actual Scores</div>
-        <h2 className="font-poster text-5xl md:text-7xl mb-8 tracking-wider">THE NUMBERS</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { l: "F1 Score", v: siteData.miamiPrediction.metrics.f1.toFixed(3) },
-            { l: "Precision", v: siteData.miamiPrediction.metrics.precision.toFixed(3) },
-            { l: "Recall", v: siteData.miamiPrediction.metrics.recall.toFixed(3) },
-            { l: "ROC-AUC", v: siteData.miamiPrediction.metrics.auc.toFixed(3) },
-          ].map((item) => (
-            <div key={item.l} className="border border-black/15 p-5">
-              <div className="text-tag">{item.l}</div>
-              <div className="font-mono text-4xl md:text-6xl mt-2 tabular-nums">{item.v}</div>
+      <section className="px-4 md:px-8 py-10">
+        <div className="text-tag mb-2">Latest Model Performance</div>
+        <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">THE NUMBERS</h2>
+        {latestPrediction ? (
+          <div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { l: "F1 Score", v: latestPrediction.metrics.f1.toFixed(3) },
+                { l: "Precision", v: latestPrediction.metrics.precision.toFixed(3) },
+                { l: "Recall", v: latestPrediction.metrics.recall.toFixed(3) },
+                { l: "ROC-AUC", v: latestPrediction.metrics.auc.toFixed(3) },
+              ].map((item) => (
+                <div key={item.l} className="border border-black/15 p-4">
+                  <div className="text-tag">{item.l}</div>
+                  <div className="font-mono text-3xl md:text-5xl mt-2 tabular-nums">{item.v}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="font-mono text-[10px] mt-4 opacity-50 uppercase tracking-widest">
+              From {latestPrediction.raceName} Forecast
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 border border-black/10 font-mono text-sm opacity-50">
+            No published predictions yet. Scores will appear here once the first forecast runs.
+          </div>
+        )}
       </section>
 
       <Checker />
 
-      <section className="px-6 md:px-16 py-16">
-        <div className="text-tag mb-3">Built With</div>
-        <h2 className="font-poster text-5xl md:text-7xl mb-8 tracking-wider">TECH STACK</h2>
-        <div className="flex flex-wrap gap-3">
-          {siteData.techStack.map((tech) => (
+      <section className="px-4 md:px-8 py-10">
+        <div className="text-tag mb-2">Built With</div>
+        <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">TECH STACK</h2>
+        <div className="flex flex-wrap gap-2">
+          {techStack.map((tech) => (
             <span
               key={tech}
-              className="bg-black text-white px-5 py-3 font-display font-bold uppercase tracking-[0.18em] text-sm"
+              className="bg-black text-white px-3 py-2 font-display font-bold uppercase tracking-[0.1em] text-xs"
             >
               {tech}
             </span>

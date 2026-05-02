@@ -9,16 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PredictionRouteImport } from './routes/prediction'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PredictionsIndexRouteImport } from './routes/predictions/index'
+import { Route as PredictionsSlugRouteImport } from './routes/predictions/$slug'
 
-const PredictionRoute = PredictionRouteImport.update({
-  id: '/prediction',
-  path: '/prediction',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -34,50 +30,68 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PredictionsIndexRoute = PredictionsIndexRouteImport.update({
+  id: '/predictions/',
+  path: '/predictions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PredictionsSlugRoute = PredictionsSlugRouteImport.update({
+  id: '/predictions/$slug',
+  path: '/predictions/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/history': typeof HistoryRoute
-  '/prediction': typeof PredictionRoute
+  '/predictions/$slug': typeof PredictionsSlugRoute
+  '/predictions/': typeof PredictionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/history': typeof HistoryRoute
-  '/prediction': typeof PredictionRoute
+  '/predictions/$slug': typeof PredictionsSlugRoute
+  '/predictions': typeof PredictionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/history': typeof HistoryRoute
-  '/prediction': typeof PredictionRoute
+  '/predictions/$slug': typeof PredictionsSlugRoute
+  '/predictions/': typeof PredictionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/history' | '/prediction'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/history'
+    | '/predictions/$slug'
+    | '/predictions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/history' | '/prediction'
-  id: '__root__' | '/' | '/about' | '/history' | '/prediction'
+  to: '/' | '/about' | '/history' | '/predictions/$slug' | '/predictions'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/history'
+    | '/predictions/$slug'
+    | '/predictions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   HistoryRoute: typeof HistoryRoute
-  PredictionRoute: typeof PredictionRoute
+  PredictionsSlugRoute: typeof PredictionsSlugRoute
+  PredictionsIndexRoute: typeof PredictionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/prediction': {
-      id: '/prediction'
-      path: '/prediction'
-      fullPath: '/prediction'
-      preLoaderRoute: typeof PredictionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/history': {
       id: '/history'
       path: '/history'
@@ -99,6 +113,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/predictions/': {
+      id: '/predictions/'
+      path: '/predictions'
+      fullPath: '/predictions/'
+      preLoaderRoute: typeof PredictionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/predictions/$slug': {
+      id: '/predictions/$slug'
+      path: '/predictions/$slug'
+      fullPath: '/predictions/$slug'
+      preLoaderRoute: typeof PredictionsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,7 +134,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   HistoryRoute: HistoryRoute,
-  PredictionRoute: PredictionRoute,
+  PredictionsSlugRoute: PredictionsSlugRoute,
+  PredictionsIndexRoute: PredictionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
