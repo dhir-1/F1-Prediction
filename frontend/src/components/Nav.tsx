@@ -10,7 +10,7 @@ const links = [
 export function Nav() {
   return (
     <nav className="bg-[var(--charcoal)] text-[var(--cream)] border-b border-white/10">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
+      <div className="w-full px-4 md:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
         <Link to="/" className="font-poster text-2xl tracking-wider">
           DHIR'S <span className="text-[var(--redorange)] italic">PIT WALL</span>
         </Link>

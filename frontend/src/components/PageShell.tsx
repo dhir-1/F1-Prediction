@@ -9,7 +9,7 @@ export function PageShell({ children }: { children: ReactNode }) {
       <Ticker />
       <Nav />
       <Checker />
-      <main className="max-w-[1280px] mx-auto bg-[var(--cream)] text-[var(--ink)] relative">
+      <main className="w-full bg-[var(--cream)] text-[var(--ink)] relative">
         {children}
       </main>
       <Checker />
@@ -21,7 +21,7 @@ export function PageShell({ children }: { children: ReactNode }) {
 function Footer() {
   return (
     <footer className="bg-[var(--charcoal)] text-[var(--cream)] py-12 px-6">
-      <div className="max-w-[1280px] mx-auto text-center">
+      <div className="w-full text-center">
         <h3 className="font-poster text-4xl md:text-6xl text-[var(--redorange)] tracking-wider">
           FORZA FERRARI . FORZA HAMILTON
         </h3>
