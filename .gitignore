@@ -8,8 +8,8 @@ frontend/.vinxi/
 frontend/.tanstack/
 frontend/.wrangler/
 
-backend/.venv/
+backend/venv/
 backend/**/__pycache__/
-backend/data/cache/
+backend/data/fastf1_cache/
 
 *.log

@@ -1,8 +1,9 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-fastf1==3.5.3
-pandas==2.2.3
-numpy==2.1.1
-requests==2.32.3
-scikit-learn==1.5.2
-xgboost==2.1.1
+fastapi
+uvicorn[standard]
+fastf1
+pandas
+numpy
+scikit-learn
+xgboost
+python-dotenv
+requests
