@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 const links = [
   { to: "/", label: "Dashboard" },
-  { to: "/prediction", label: "Miami Forecast" },
+  { to: "/prediction", label: "Predictions" },
   { to: "/history", label: "Archive" },
   { to: "/about", label: "About Model" },
 ] as const;
@@ -10,7 +10,7 @@ const links = [
 export function Nav() {
   return (
     <nav className="bg-[var(--charcoal)] text-[var(--cream)] border-b border-white/10">
-      <div className="max-w-[1280px] mx-auto px-6 py-3 flex items-center justify-between gap-6 flex-wrap">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
         <Link to="/" className="font-poster text-2xl tracking-wider">
           DHIR'S <span className="text-[var(--redorange)] italic">PIT WALL</span>
         </Link>
