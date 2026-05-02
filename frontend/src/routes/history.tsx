@@ -1,3 +1,4 @@
+import React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Checker } from "@/components/Checker";
 import { PageShell } from "@/components/PageShell";
@@ -80,6 +81,7 @@ function HistoryPage() {
 }
 
 function RaceSection({ race, drivers }: { race: Race; drivers: Driver[] }) {
+  const [imageError, setImageError] = React.useState(false);
   const winner = race.winner ? driverByCode(race.winner, drivers) : null;
   const winnerColor = winner ? winner.color : "var(--charcoal)";
   const gradient = `linear-gradient(135deg, color-mix(in srgb, ${winnerColor} 15%, black), black)`;
@@ -94,11 +96,12 @@ function RaceSection({ race, drivers }: { race: Race; drivers: Driver[] }) {
       </h2>
 
       <div className="relative aspect-[16/6] md:aspect-[16/5] w-full overflow-hidden bg-black group">
-        {race.winnerImage ? (
+        {race.winnerImage && !imageError ? (
           <>
             <img 
               src={race.winnerImage} 
               alt={`${race.name} winner`}
+              onError={() => setImageError(true)}
               className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-700" 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
