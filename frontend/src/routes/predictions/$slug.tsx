@@ -5,7 +5,6 @@ import { driverByCode, getPredictionBySlug, useSiteData } from "@/lib/data";
 
 export const Route = createFileRoute("/predictions/$slug")({
   loader: ({ params }) => {
-    // We defer the actual check to the component where we have SiteDataContext
     return { slug: params.slug };
   },
   component: PredictionDetailPage,
@@ -31,10 +30,12 @@ function PredictionDetailPage() {
     trainingData,
     limitations,
     qualifyingDone,
+    actualResult,
   } = prediction;
 
   return (
     <PageShell>
+      {/* ── Hero ── */}
       <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-10 relative overflow-hidden">
         <div className="text-tag mb-2">
           Round {String(prediction.round).padStart(2, "0")} . {race?.country ?? "Unknown"}
@@ -59,6 +60,7 @@ function PredictionDetailPage() {
 
       <Checker />
 
+      {/* ── Predicted Podium ── */}
       <section className="px-4 md:px-8 py-10">
         <div className="text-tag mb-2">Predicted Podium</div>
         <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">THE TOP THREE</h2>
@@ -92,8 +94,58 @@ function PredictionDetailPage() {
         </div>
       </section>
 
+      {/* ── Prediction vs Reality (only shown after race) ── */}
+      {actualResult && actualResult.length > 0 && (
+        <>
+          <Checker />
+          <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-10">
+            <div className="text-tag mb-2">Post Race</div>
+            <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">PREDICTION VS REALITY</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {actualResult.map((actual) => {
+                const predictedDriver = podium.find((p) => p.pos === actual.pos);
+                const correct = predictedDriver?.code === actual.driver;
+                const actualDriver = driverByCode(actual.driver, siteData.drivers);
+                const predictedDriverData = predictedDriver
+                  ? driverByCode(predictedDriver.code, siteData.drivers)
+                  : null;
+
+                return (
+                  <div
+                    key={actual.pos}
+                    className="border border-white/10 p-4"
+                    style={{ borderLeft: `3px solid ${correct ? "#00ff87" : "var(--redorange)"}` }}
+                  >
+                    <div className="font-poster text-2xl tracking-wider mb-3">P{actual.pos}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-mono uppercase opacity-50 w-20">Actual</span>
+                      <span className="font-mono font-bold text-lg">{actualDriver.code}</span>
+                      <span className="text-lg">{correct ? "✅" : "❌"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase opacity-50 w-20">Predicted</span>
+                      <span
+                        className="font-mono text-sm opacity-70"
+                        style={{ color: correct ? "#00ff87" : "var(--redorange)" }}
+                      >
+                        {predictedDriverData?.code ?? "—"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-6 font-mono text-xs opacity-50">
+              {actualResult.filter((a) => podium.find((p) => p.pos === a.pos && p.code === a.driver)).length}
+              /{actualResult.length} podium positions correct
+            </div>
+          </section>
+        </>
+      )}
+
       <Checker />
 
+      {/* ── Full Grid Forecast ── */}
       <section className="px-4 md:px-8 py-10">
         <div className="text-tag mb-2">Predicted Order</div>
         <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">FULL GRID FORECAST</h2>
@@ -135,6 +187,7 @@ function PredictionDetailPage() {
 
       <Checker />
 
+      {/* ── Feature Weight ── */}
       <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-10">
         <div className="text-tag mb-2">Model Internals</div>
         <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">FEATURE WEIGHT</h2>
@@ -163,6 +216,7 @@ function PredictionDetailPage() {
 
       <Checker />
 
+      {/* ── Timing Board ── */}
       <section className="px-4 md:px-8 py-10">
         <div className="text-tag mb-2">Transparency Strip</div>
         <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">TIMING BOARD</h2>
@@ -206,6 +260,7 @@ function PredictionDetailPage() {
 
       <Checker />
 
+      {/* ── Limitations ── */}
       <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-10 relative">
         <div className="text-tag mb-2">Honest Disclosures</div>
         <h2 className="font-poster text-4xl md:text-5xl mb-6 tracking-wider">LIMITATIONS</h2>

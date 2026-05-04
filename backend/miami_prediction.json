@@ -1,0 +1,261 @@
+{
+  "slug": "miami-grand-prix",
+  "raceName": "Miami Grand Prix",
+  "round": 6,
+  "circuit": "Miami International Autodrome",
+  "date": "2026-05-04",
+  "status": "Final Prediction",
+  "predictedPodium": [
+    {
+      "pos": 1,
+      "driver": "LEC",
+      "team": "Ferrari",
+      "confidence": 79.4
+    },
+    {
+      "pos": 2,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "confidence": 78.1
+    },
+    {
+      "pos": 3,
+      "driver": "NOR",
+      "team": "McLaren",
+      "confidence": 76.1
+    }
+  ],
+  "fullGrid": [
+    {
+      "position": 1,
+      "driver": "LEC",
+      "team": "Ferrari",
+      "podium_prob": 79.4,
+      "grid_position": 3,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 2,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "podium_prob": 78.1,
+      "grid_position": 1,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 3,
+      "driver": "NOR",
+      "team": "McLaren",
+      "podium_prob": 76.1,
+      "grid_position": 4,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 4,
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "podium_prob": 74.0,
+      "grid_position": 2,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 5,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "podium_prob": 23.2,
+      "grid_position": 5,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 6,
+      "driver": "HAM",
+      "team": "Ferrari",
+      "podium_prob": 22.5,
+      "grid_position": 6,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 7,
+      "driver": "PIA",
+      "team": "McLaren",
+      "podium_prob": 20.3,
+      "grid_position": 7,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 8,
+      "driver": "GAS",
+      "team": "Alpine",
+      "podium_prob": 19.8,
+      "grid_position": 10,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 9,
+      "driver": "OCO",
+      "team": "Haas F1 Team",
+      "podium_prob": 19.8,
+      "grid_position": 15,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 10,
+      "driver": "LIN",
+      "team": "Racing Bulls",
+      "podium_prob": 19.8,
+      "grid_position": 17,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 11,
+      "driver": "HAD",
+      "team": "Red Bull Racing",
+      "podium_prob": 14.8,
+      "grid_position": 9,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 12,
+      "driver": "LAW",
+      "team": "Racing Bulls",
+      "podium_prob": 14.8,
+      "grid_position": 12,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 13,
+      "driver": "COL",
+      "team": "Alpine",
+      "podium_prob": 14.8,
+      "grid_position": 8,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 14,
+      "driver": "BEA",
+      "team": "Haas F1 Team",
+      "podium_prob": 14.8,
+      "grid_position": 13,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 15,
+      "driver": "ALO",
+      "team": "Aston Martin",
+      "podium_prob": 14.2,
+      "grid_position": 18,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 16,
+      "driver": "STR",
+      "team": "Aston Martin",
+      "podium_prob": 14.2,
+      "grid_position": 19,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 17,
+      "driver": "BOT",
+      "team": "Cadillac",
+      "podium_prob": 14.2,
+      "grid_position": 20,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 18,
+      "driver": "SAI",
+      "team": "Williams",
+      "podium_prob": 14.2,
+      "grid_position": 14,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 19,
+      "driver": "BOR",
+      "team": "Audi",
+      "podium_prob": 14.2,
+      "grid_position": 22,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 20,
+      "driver": "PER",
+      "team": "Cadillac",
+      "podium_prob": 14.2,
+      "grid_position": 21,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 21,
+      "driver": "ALB",
+      "team": "Williams",
+      "podium_prob": 13.5,
+      "grid_position": 16,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 22,
+      "driver": "HUL",
+      "team": "Audi",
+      "podium_prob": 13.5,
+      "grid_position": 11,
+      "grid_source": "REAL qualifying"
+    }
+  ],
+  "modelUsed": "XGBClassifier",
+  "features": [
+    "grid_position",
+    "avg_finish_last3",
+    "constructor_avg_finish",
+    "gap_to_pole",
+    "avg_pit_time",
+    "avg_pit_count",
+    "season_points",
+    "lap_consistency_std",
+    "dnf_count",
+    "street_circuit",
+    "weather_wet",
+    "track_temp",
+    "new_regs"
+  ],
+  "featureImportances": {
+    "grid_position": 0.5839,
+    "avg_finish_last3": 0.0658,
+    "constructor_avg_finish": 0.1214,
+    "gap_to_pole": 0.0,
+    "avg_pit_time": 0.0,
+    "avg_pit_count": 0.0537,
+    "season_points": 0.0726,
+    "lap_consistency_std": 0.0636,
+    "dnf_count": 0.039,
+    "street_circuit": 0.0,
+    "weather_wet": 0.0,
+    "track_temp": 0.0,
+    "new_regs": 0.0
+  },
+  "metrics": {
+    "f1": 0.794,
+    "precision": 0.722,
+    "recall": 0.889,
+    "roc_auc": 0.968
+  },
+  "trainingData": {
+    "races": [
+      "Australia",
+      "China",
+      "Japan"
+    ],
+    "rows": 66,
+    "cvMethod": "Leave One Race Out (LORO)",
+    "tuning": "GridSearchCV with StratifiedKFold (3 splits)"
+  },
+  "limitations": [
+    "Only 66 training rows (3 races x 22 drivers) \u2014 model may overfit.",
+    "Miami runs under new energy management regulations (new_regs=1 flag added).",
+    "No historical Miami-specific performance data used.",
+    "Grid position from real qualifying results.",
+    "Cadillac and new teams may have incomplete FastF1 data."
+  ],
+  "qualifying_done": true
+}

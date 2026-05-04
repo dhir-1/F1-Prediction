@@ -86,6 +86,7 @@ export interface RacePrediction {
   metrics: PredictionMetrics;
   trainingData: TrainingData;
   limitations: string[];
+  actualResult?: { pos: number; driver: string }[];
 }
 
 export interface SiteData {

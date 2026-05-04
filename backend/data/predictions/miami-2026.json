@@ -4,19 +4,19 @@
   "round": 6,
   "circuit": "Miami International Autodrome",
   "date": "2026-05-04",
-  "status": "Pre-Qualifying Forecast",
+  "status": "Result In",
   "predictedPodium": [
     {
       "pos": 1,
-      "driver": "RUS",
-      "team": "Mercedes",
-      "confidence": 85.2
+      "driver": "NOR",
+      "team": "McLaren",
+      "confidence": 93.0
     },
     {
       "pos": 2,
-      "driver": "PIA",
-      "team": "McLaren",
-      "confidence": 84.5
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "confidence": 93.0
     },
     {
       "pos": 3,
@@ -28,19 +28,19 @@
   "fullGrid": [
     {
       "position": 1,
-      "driver": "RUS",
-      "team": "Mercedes",
-      "podium_prob": 85.2,
-      "grid_position": 1,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "driver": "NOR",
+      "team": "McLaren",
+      "podium_prob": 93.0,
+      "grid_position": 4,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 2,
-      "driver": "PIA",
-      "team": "McLaren",
-      "podium_prob": 84.5,
-      "grid_position": 4,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "podium_prob": 93.0,
+      "grid_position": 2,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 3,
@@ -48,95 +48,95 @@
       "team": "Mercedes",
       "podium_prob": 83.9,
       "grid_position": 1,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 4,
       "driver": "LEC",
       "team": "Ferrari",
-      "podium_prob": 74.3,
-      "grid_position": 4,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "podium_prob": 79.8,
+      "grid_position": 3,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 5,
       "driver": "HAM",
       "team": "Ferrari",
       "podium_prob": 5.1,
-      "grid_position": 5,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 6,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 6,
-      "driver": "NOR",
-      "team": "McLaren",
-      "podium_prob": 4.4,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "podium_prob": 4.7,
       "grid_position": 5,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 7,
-      "driver": "GAS",
-      "team": "Alpine",
-      "podium_prob": 3.0,
-      "grid_position": 9,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "driver": "PIA",
+      "team": "McLaren",
+      "podium_prob": 4.3,
+      "grid_position": 7,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 8,
-      "driver": "OCO",
-      "team": "Haas F1 Team",
+      "driver": "GAS",
+      "team": "Alpine",
       "podium_prob": 3.0,
-      "grid_position": 12,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 10,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 9,
-      "driver": "LIN",
-      "team": "Racing Bulls",
+      "driver": "OCO",
+      "team": "Haas F1 Team",
       "podium_prob": 3.0,
-      "grid_position": 11,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 15,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 10,
+      "driver": "LIN",
+      "team": "Racing Bulls",
+      "podium_prob": 3.0,
+      "grid_position": 17,
+      "grid_source": "REAL qualifying"
+    },
+    {
+      "position": 11,
       "driver": "BEA",
       "team": "Haas F1 Team",
       "podium_prob": 2.5,
       "grid_position": 13,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
-    },
-    {
-      "position": 11,
-      "driver": "PER",
-      "team": "Cadillac",
-      "podium_prob": 2.1,
-      "grid_position": 19,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 12,
-      "driver": "STR",
-      "team": "Aston Martin",
+      "driver": "PER",
+      "team": "Cadillac",
       "podium_prob": 2.1,
       "grid_position": 21,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 13,
-      "driver": "HAD",
-      "team": "Red Bull Racing",
-      "podium_prob": 2.0,
-      "grid_position": 6,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "driver": "STR",
+      "team": "Aston Martin",
+      "podium_prob": 2.1,
+      "grid_position": 19,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 14,
-      "driver": "VER",
+      "driver": "HAD",
       "team": "Red Bull Racing",
       "podium_prob": 2.0,
-      "grid_position": 13,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 9,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 15,
@@ -144,7 +144,7 @@
       "team": "Audi",
       "podium_prob": 2.0,
       "grid_position": 11,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 16,
@@ -152,31 +152,31 @@
       "team": "Racing Bulls",
       "podium_prob": 2.0,
       "grid_position": 12,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 17,
       "driver": "COL",
       "team": "Alpine",
       "podium_prob": 2.0,
-      "grid_position": 14,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 8,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 18,
       "driver": "SAI",
       "team": "Williams",
       "podium_prob": 2.0,
-      "grid_position": 18,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 14,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 19,
       "driver": "BOR",
       "team": "Audi",
       "podium_prob": 2.0,
-      "grid_position": 11,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 22,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 20,
@@ -184,23 +184,23 @@
       "team": "Aston Martin",
       "podium_prob": 2.0,
       "grid_position": 18,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 21,
       "driver": "ALB",
       "team": "Williams",
       "podium_prob": 1.9,
-      "grid_position": 18,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 16,
+      "grid_source": "REAL qualifying"
     },
     {
       "position": 22,
       "driver": "BOT",
       "team": "Cadillac",
       "podium_prob": 1.6,
-      "grid_position": 19,
-      "grid_source": "ESTIMATED (avg 2026 quali)"
+      "grid_position": 20,
+      "grid_source": "REAL qualifying"
     }
   ],
   "modelUsed": "XGBClassifier",
@@ -253,8 +253,17 @@
     "Only 66 training rows (3 races x 22 drivers) \u2014 model may overfit.",
     "Miami runs under new energy management regulations (new_regs=1 flag added).",
     "No historical Miami-specific performance data used.",
-    "Pre-qualifying: grid position is estimated, not real.",
+    "Grid position from real qualifying results.",
     "Cadillac and new teams may have incomplete FastF1 data."
   ],
-  "qualifying_done": false
+
+  "actualResult": [
+    {"pos": 1, "driver": "ANT"},
+    {"pos": 2, "driver": "NOR"},
+    {"pos": 3, "driver": "PIA"}
+],
+  "qualifying_done": true
+  
 }
+
+

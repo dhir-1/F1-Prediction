@@ -1,23 +1,3 @@
-# =============================================================================
-# DHIR'S PIT WALL — F1 2026 RACE PREDICTION PIPELINE
-# predict.py
-#
-# WHAT THIS FILE DOES (plain English):
-#   1. Pulls real 2026 race data from FastF1 (Australia, China, Japan)
-#   2. Builds a feature table — one row per driver per race (66 rows total)
-#   3. Trains 3 models: XGBClassifier, XGBRegressor, Random Forest
-#   4. Evaluates each model using Leave One Race Out (LORO) cross-validation
-#   5. Picks the best model and makes a Miami GP podium prediction
-#   6. Saves the prediction as backend/data/predictions/miami-2026.json
-#
-# HOW TO RUN:
-#   Step 1 (once):  pip install fastf1 xgboost scikit-learn pandas numpy
-#   Step 2:         python scripts/generate_prediction.py
-#   Step 3 (May 3): Set QUALIFYING_DONE = True and fill MIAMI_GRID below,
-#                   then run python scripts/generate_prediction.py again.
-#
-# =============================================================================
-
 import fastf1
 import pandas as pd
 import numpy as np
@@ -62,15 +42,31 @@ TRAINING_RACES = [
 #   → fill in MIAMI_GRID below with real positions from qualifying results
 #     Key = driver 3-letter code, Value = grid position (1 = pole)
 # ─────────────────────────────────────────────────────────────────────────────
-QUALIFYING_DONE = False   # <-- flip to True on May 3rd evening
+QUALIFYING_DONE = True   # <-- flip to True on May 3rd evening
 
 MIAMI_GRID = {
-    # Fill these in on May 3rd after qualifying.
-    # Example format (replace with real results):
-    # "HAM": 1,
-    # "LEC": 2,
-    # "NOR": 3,
-    # ... all 20 drivers
+    "ANT": 1,
+    "VER": 2,
+    "LEC": 3,
+    "NOR": 4,
+    "RUS": 5,
+    "HAM": 6,
+    "PIA": 7,
+    "COL": 8,
+    "HAD": 9,
+    "GAS": 10,
+    "HUL": 11,
+    "LAW": 12,
+    "BEA": 13,
+    "SAI": 14,
+    "OCO": 15,
+    "ALB": 16,
+    "LIN": 17,
+    "ALO": 18,
+    "STR": 19,
+    "BOT": 20,
+    "PER": 21,
+    "BOR": 22,
 }
 
 #Check the weather of the miami race at 16:00
@@ -87,14 +83,14 @@ def fetch_miami_weather():
     response = requests.get(url)
     data = response.json()
 
-    hour_index = 16
+    hour_index = 13
 
     rain_prob = data["hourly"]["precipitation_probability"][hour_index]
     track_temp = data["hourly"]["temperature_2m"][hour_index] + 10
     
     weather_wet = 1 if rain_prob >= 50 else 0
 
-    print(f" Miami forecast at 16:00 ET:")
+    print(f" Miami forecast at 13:00 ET:")
     print(f" Rain probability : {rain_prob}%")
     print(f" Estimated track temp : {track_temp}°C")
     print(f" Weather wet flag : {weather_wet}")

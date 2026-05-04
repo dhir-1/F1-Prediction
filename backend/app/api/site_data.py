@@ -78,7 +78,7 @@ FEATURE_DETAILS = [
 
 def fetch_fastf1_data():
     """Fetch live standings and race results from FastF1."""
-    completed_rounds = [1, 2, 3]  # Update this as season progresses
+    completed_rounds = [1, 2, 3, 6]  # Update this as season progresses
     driver_points = {}
     driver_teams = {}
     race_results = {}  # round -> {winner, podium}
@@ -156,9 +156,11 @@ def build_site_data():
         race_date = datetime.fromisoformat(r["date"].replace("Z", "+00:00"))
         result = race_results.get(r["round"], {})
 
+        MANUALLY_COMPLETED = [1, 2, 3, 6]
+
         if "status" in r:
             status = r["status"]
-        elif race_date < now_dt and result.get("winner"):
+        elif r["round"] in MANUALLY_COMPLETED:
             status = "completed"
         elif not next_set and race_date >= now_dt:
             status = "next"
@@ -261,6 +263,7 @@ def build_site_data():
                     },
                     "trainingData": raw.get("trainingData", {}),
                     "limitations": raw.get("limitations", []),
+                    "actualResult": raw.get("actualResult", []),
                 })
                 print(f"  ✓ Added to predictions")
             except Exception as e:
