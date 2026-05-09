@@ -1,14 +1,15 @@
 # Winner Images
 
-This directory holds the images for the race winners shown on the Race Archive (/history) page.
+This directory holds optional local winner photos for the Race Archive (`/history`) page.
 
 ## Naming Convention
 
-Images should be named according to the `winnerImage` field defined in `backend/app/data/season.py`. 
+Use the race slug from `backend/app/api/site_data.py`.
 
-For example:
-- `australian-grand-prix-2026.jpg`
-- `chinese-grand-prix-2026.jpg`
-- `japanese-grand-prix-2026.jpg`
+Examples:
+- `australian-grand-prix.jpg`
+- `chinese-grand-prix.jpg`
+- `japanese-grand-prix.jpg`
+- `miami-grand-prix.jpg`
 
-If an image is missing, the frontend will automatically gracefully degrade to a solid color gradient based on the winning team's colors.
+If a local image is missing, the archive falls back automatically to the live winner spotlight layout using team color styling and driver headshot metadata from FastF1.

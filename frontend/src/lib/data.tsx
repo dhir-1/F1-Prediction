@@ -8,6 +8,9 @@ export interface Driver {
   team: string;
   color: string;
   points: number;
+  number?: string | null;
+  headshot?: string | null;
+  broadcastName?: string | null;
 }
 
 export interface Race {
@@ -87,6 +90,7 @@ export interface RacePrediction {
   trainingData: TrainingData;
   limitations: string[];
   actualResult?: { pos: number; driver: string }[];
+  pitWallNotes?: string[];
 }
 
 export interface SiteData {
@@ -96,7 +100,7 @@ export interface SiteData {
   techStack: string[];
   predictions: RacePrediction[];
   /** Backward compat — first available prediction (used by legacy pages until Phase 3) */
-  miamiPrediction: RacePrediction;
+  miamiPrediction: RacePrediction | null;
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -180,6 +184,9 @@ export function driverByCode(code: string, drivers: Driver[]): Driver {
       team: "Unknown",
       color: "#888888",
       points: 0,
+      number: null,
+      headshot: null,
+      broadcastName: null,
     }
   );
 }

@@ -1,7 +1,7 @@
 {
   "slug": "miami-grand-prix",
   "raceName": "Miami Grand Prix",
-  "round": 6,
+  "round": 4,
   "circuit": "Miami International Autodrome",
   "date": "2026-05-04",
   "status": "Result In",
@@ -255,6 +255,11 @@
     "No historical Miami-specific performance data used.",
     "Grid position from real qualifying results.",
     "Cadillac and new teams may have incomplete FastF1 data."
+  ],
+  "pitWallNotes": [
+    "The final board leaned heavily toward Norris and Verstappen after real qualifying, but Antonelli converted his pole-side start into the race win and exposed how much Mercedes race pace still sat below the model's headline probabilities.",
+    "Piastri climbing onto the podium from seventh on the grid became the key miss in the published top three, which is a good reminder that Miami can still reshuffle the order even when grid position dominates the feature weights.",
+    "This result is a useful benchmark for the season: the model kept two podium drivers in the top seven, but it missed the exact order badly enough that post-race review matters as much as the pre-race confidence score."
   ],
 
   "actualResult": [
