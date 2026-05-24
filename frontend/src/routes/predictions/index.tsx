@@ -46,7 +46,8 @@ function PredictionsBoard() {
               return (
                 <Link
                   key={pred.slug}
-                  to={`/predictions/${pred.slug}`}
+                  to="/predictions/$slug"
+                  params={{ slug: pred.slug }}
                   className="group border border-black/20 hover:border-[var(--redorange)] transition-colors flex flex-col"
                 >
                   <div className="p-6 flex-1">

@@ -47,6 +47,7 @@ function PredictionDetailPage() {
     actualPodium.length > 0 && podium.length > 0 && actualPodium[0]?.driver === podium[0]?.code;
   const projectedWinner = podium[0] ? driverByCode(podium[0].code, siteData.drivers) : null;
   const actualWinner = actualPodium[0] ? driverByCode(actualPodium[0].driver, siteData.drivers) : null;
+  const hasValidationMetrics = Object.values(metrics).some((value) => value > 0);
 
   return (
     <PageShell>
@@ -318,14 +319,20 @@ function PredictionDetailPage() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { l: "Model", v: modelUsed },
-            { l: "F1 Score", v: metrics.f1.toFixed(3) },
-            { l: "Precision", v: metrics.precision.toFixed(3) },
-            { l: "Recall", v: metrics.recall.toFixed(3) },
-            { l: "ROC-AUC", v: metrics.auc.toFixed(3) },
+            { l: "F1 Score", v: hasValidationMetrics ? metrics.f1.toFixed(3) : "N/A" },
+            { l: "Precision", v: hasValidationMetrics ? metrics.precision.toFixed(3) : "N/A" },
+            { l: "Recall", v: hasValidationMetrics ? metrics.recall.toFixed(3) : "N/A" },
+            { l: "ROC-AUC", v: hasValidationMetrics ? metrics.auc.toFixed(3) : "N/A" },
           ].map((item) => (
             <div key={item.l} className="border border-black/15 p-4">
               <div className="text-tag">{item.l}</div>
-              <div className="font-mono text-xl md:text-2xl mt-2 tabular-nums break-words">
+              <div
+                className={`mt-2 break-words ${
+                  item.l === "Model"
+                    ? "font-mono text-lg md:text-xl leading-snug"
+                    : "font-mono text-xl md:text-2xl tabular-nums"
+                }`}
+              >
                 {item.v}
               </div>
             </div>
@@ -351,6 +358,12 @@ function PredictionDetailPage() {
             </p>
           </div>
         </div>
+        {!hasValidationMetrics && (
+          <div className="mt-4 font-mono text-[10px] uppercase tracking-widest opacity-50">
+            Holdout validation is not reported for this board because the model was trained on the
+            full available sample.
+          </div>
+        )}
       </section>
 
       <Checker />

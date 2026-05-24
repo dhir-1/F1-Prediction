@@ -1,0 +1,265 @@
+{
+  "slug": "canadian-grand-prix",
+  "raceName": "Canadian Grand Prix",
+  "round": 5,
+  "circuit": "Circuit Gilles-Villeneuve",
+  "date": "2026-05-24",
+  "status": "Post-Sprint Prediction",
+  "modelUsed": "VotingClassifier (XGB \u00b7 XGBReg \u00b7 RF)",
+  "qualifying_done": false,
+  "predictedPodium": [
+    {
+      "pos": 1,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "confidence": 91.7
+    },
+    {
+      "pos": 2,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "confidence": 71.9
+    },
+    {
+      "pos": 3,
+      "driver": "PIA",
+      "team": "McLaren",
+      "confidence": 52.4
+    }
+  ],
+  "fullGrid": [
+    {
+      "position": 1,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "podium_prob": 91.7,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 2,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "podium_prob": 71.9,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 3,
+      "driver": "PIA",
+      "team": "McLaren",
+      "podium_prob": 52.4,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 4,
+      "driver": "NOR",
+      "team": "McLaren",
+      "podium_prob": 48.5,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 5,
+      "driver": "LEC",
+      "team": "Ferrari",
+      "podium_prob": 38.5,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 6,
+      "driver": "HAM",
+      "team": "Ferrari",
+      "podium_prob": 24.4,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 7,
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "podium_prob": 18.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 8,
+      "driver": "HAD",
+      "team": "Red Bull Racing",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 9,
+      "driver": "SAI",
+      "team": "Williams",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 10,
+      "driver": "COL",
+      "team": "Alpine",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 11,
+      "driver": "BEA",
+      "team": "Haas F1 Team",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 12,
+      "driver": "BOR",
+      "team": "Audi",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 13,
+      "driver": "OCO",
+      "team": "Haas F1 Team",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 14,
+      "driver": "ALB",
+      "team": "Williams",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 15,
+      "driver": "LIN",
+      "team": "Racing Bulls",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 16,
+      "driver": "ALO",
+      "team": "Aston Martin",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 17,
+      "driver": "STR",
+      "team": "Aston Martin",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 18,
+      "driver": "PER",
+      "team": "Cadillac",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 19,
+      "driver": "BOT",
+      "team": "Cadillac",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 20,
+      "driver": "HUL",
+      "team": "Audi",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 21,
+      "driver": "LAW",
+      "team": "Racing Bulls",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    },
+    {
+      "position": 22,
+      "driver": "GAS",
+      "team": "Alpine",
+      "podium_prob": 17.0,
+      "grid_position": 10,
+      "grid_source": "Not used"
+    }
+  ],
+  "features": [
+    "avg_finish_last3",
+    "finish_trend",
+    "points_per_race",
+    "avg_lap_time_delta",
+    "constructor_avg_finish",
+    "tyre_consistency",
+    "avg_grid_position",
+    "dnf_count",
+    "reliability_score",
+    "sprint_position"
+  ],
+  "featureImportances": {
+    "avg_finish_last3": 0.0185,
+    "finish_trend": 0.016,
+    "points_per_race": 0.016,
+    "avg_lap_time_delta": 0.2704,
+    "constructor_avg_finish": 0.2613,
+    "tyre_consistency": 0.0028,
+    "avg_grid_position": 0.2422,
+    "dnf_count": 0.0,
+    "reliability_score": 0.1196,
+    "sprint_position": 0.0532
+  },
+  "metrics": {
+    "f1": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "roc_auc": 0.0
+  },
+  "trainingData": {
+    "races": [
+      "Australia",
+      "China",
+      "Japan",
+      "Miami"
+    ],
+    "rows": 88,
+    "cvMethod": "Full Train \u00b7 GridSearch 3-Fold (tuning only)"
+  },
+  "actualResult": [],
+  "pitWallNotes": [
+    "Grid position excluded by design \u2014 in Miami it had 57% importance and dominated the output unfairly.",
+    "Sprint result included as a feature. Historical sprint weekends like China and Miami use their real sprint classifications, while non-sprint weekends fall back to grid position as the Saturday-order proxy.",
+    "reliability_score captures DNF cost weighted by race position \u2014 a DNF from P1 hurts far more than a DNF from P20.",
+    "Both Mercedes and McLaren are bringing upgrade packages to Canada. McLaren's new front wing targets aerodynamic efficiency on Montreal's long straights.",
+    "Cadillac brings Canada-specific upgrades: new front brake drums, diffuser trim, winglets and front torsion bars to improve curb riding at Circuit Gilles-Villeneuve.",
+    "Canada is a stop-start circuit with no high speed corners \u2014 where Mercedes' typical advantage is smallest. Rain and cold (as low as 14\u00b0C) could shuffle the order further."
+  ],
+  "limitations": [
+    "Only 88 training rows across 4 dry permanent circuits \u2014 wet and street circuit features carry zero signal.",
+    "Mercedes 2026 dominance may cause model to overweight ANT and RUS regardless of Canada-specific pace.",
+    "Upgrade impact (McLaren front wing, Mercedes package, Cadillac curb kit) is not capturable from historical data.",
+    "10 features used \u2014 dead features (pit times, positions gained, tyre life) dropped due to insufficient variance in training data.",
+    "Sprint weekends in the historical sample use real sprint results, but non-sprint weekends still fall back to grid position for that feature.",
+    "Sprint result added post-Saturday gives real pace signal but is still from a shorter race format."
+  ]
+}

@@ -242,7 +242,11 @@ function RaceSection({
             {prediction && (
               <div className="mt-6 border-t border-white/10 pt-5">
                 <div className="text-tag text-white/70">Forecast Archive</div>
-                <Link to={`/predictions/${prediction.slug}`} className="btn-stamp mt-3 inline-block text-xs">
+                <Link
+                  to="/predictions/$slug"
+                  params={{ slug: prediction.slug }}
+                  className="btn-stamp mt-3 inline-block text-xs"
+                >
                   View Prediction
                 </Link>
               </div>

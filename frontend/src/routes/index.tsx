@@ -63,11 +63,11 @@ function Index() {
 
   return (
     <PageShell>
-      <section className="relative px-4 md:px-8 pt-10 pb-8 overflow-hidden">
+      <section className="relative px-4 md:px-8 pt-6 md:pt-8 pb-8 overflow-hidden">
         <BlossomBranch className="absolute top-0 left-0 w-40 md:w-64 opacity-50" />
         <BlossomBranch className="absolute top-0 right-0 w-40 md:w-64 opacity-50" flip />
 
-        <div className="relative grid gap-10 xl:grid-cols-[minmax(0,1.12fr)_420px] xl:items-end">
+        <div className="relative grid gap-10 xl:grid-cols-[minmax(0,1.12fr)_420px] xl:items-start">
           <div>
             <div className="text-tag mb-2">2026 Season . Race Predictions</div>
             <h1 className="font-poster italic leading-[0.85] text-[13vw] md:text-[7.5rem]">
@@ -125,9 +125,9 @@ function Index() {
 
       <Checker />
 
-      <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-8 relative overflow-hidden">
+      <section className="bg-[var(--charcoal)] text-[var(--cream)] px-4 md:px-8 py-8 md:py-10 relative overflow-hidden">
         <SpeedLines />
-        <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.18fr)_430px] xl:items-end">
+        <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.18fr)_430px] xl:items-start">
           <div>
             <div className="text-tag mb-1">Round {String(next.round).padStart(2, "0")} . Next Up</div>
             <h2 className="font-poster text-5xl md:text-7xl tracking-wider leading-none">
@@ -138,7 +138,11 @@ function Index() {
               {new Date(next.date).toDateString()}
             </div>
             {nextRacePrediction ? (
-              <Link to={`/predictions/${nextRacePrediction.slug}`} className="btn-stamp mt-4 inline-block text-xs">
+              <Link
+                to="/predictions/$slug"
+                params={{ slug: nextRacePrediction.slug }}
+                className="btn-stamp mt-4 inline-block text-xs"
+              >
                 View Prediction
               </Link>
             ) : (
@@ -227,7 +231,8 @@ function Index() {
                   return (
                     <Link
                       key={prediction.slug}
-                      to={`/predictions/${prediction.slug}`}
+                      to="/predictions/$slug"
+                      params={{ slug: prediction.slug }}
                       className="border border-black/15 p-4 hover:bg-black/5 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2">
