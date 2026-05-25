@@ -245,7 +245,11 @@
     "rows": 88,
     "cvMethod": "Full Train \u00b7 GridSearch 3-Fold (tuning only)"
   },
-  "actualResult": [],
+  "actualResult": [
+    {"pos": 1, "driver": "ANT"},
+    {"pos": 2, "driver": "HAM"},
+    {"pos": 3, "driver": "VER"}
+  ],
   "pitWallNotes": [
     "Grid position excluded by design \u2014 in Miami it had 57% importance and dominated the output unfairly.",
     "Sprint result included as a feature. Historical sprint weekends like China and Miami use their real sprint classifications, while non-sprint weekends fall back to grid position as the Saturday-order proxy.",
