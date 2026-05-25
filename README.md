@@ -1,6 +1,6 @@
 # 🏎️ DHIR'S PIT WALL
 ## F1 2026 · Machine Learning Race Prediction Dashboard
- 
+
 ```
 ████████████████████████████████████████████████████████████████
 █                                                              █
@@ -8,151 +8,145 @@
 █                                                              █
 ████████████████████████████████████████████████████████████████
 ```
- 
+
 > *"In Formula One, data is everything. This is my attempt to let the numbers speak."*
- 
-A full-stack machine learning project that predicts Formula One podium finishes using real telemetry and race data pulled live from the F1 API via FastF1 — built race by race throughout the 2026 season.
- 
+
+A full-stack machine learning project that predicts Formula One podium finishes using real telemetry and race data pulled live from the F1 API via FastF1 — built race by race throughout the 2026 season. Each round gets its own prediction script, tuned to the circuit, format, and data available at the time.
+
 ---
- 
+
 ## ⚡ LIVE PREVIEW
- 
+
 > Frontend · React + Vite · TanStack Router
 > Backend · FastAPI · Python 3.11
 > Data · FastF1 · Live 2026 Season
- 
+
 ---
- 
+
 ## 🏁 HOW IT WORKS
- 
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    PREDICTION PIPELINE                       │
 │                                                             │
 │  FastF1 API  →  Feature Engineering  →  Model Training      │
 │      ↓                  ↓                     ↓             │
-│  Race Data        12 Features           XGBoost / RF        │
-│  Lap Times        Grid Position         LORO Cross-Val       │
-│  Pit Stops        Rolling Form          predict_proba()      │
-│  Weather          Constructor Pace      ↓                   │
-│                                    JSON Output              │
+│  Race Data        Per-Race Features     Model (varies)      │
+│  Lap Times        Rolling Form          LORO / GridSearch   │
+│  Pit Stops        Constructor Pace      predict_proba()     │
+│  Sprint Results   Reliability Score     ↓                   │
+│  Weather                           JSON Output              │
 │                                         ↓                   │
 │                                   FastAPI Route             │
 │                                         ↓                   │
 │                                  React Dashboard            │
 └─────────────────────────────────────────────────────────────┘
 ```
- 
-### The 12 Features
- 
-| # | Feature | Why It Matters |
-|---|---------|---------------|
-| 1 | **Grid Position** | Most predictive single feature in F1 |
-| 2 | Avg Finishing Position (last 3 races) | Current driver form |
-| 3 | Constructor Avg Finish | Car pace indicator |
-| 4 | Gap to Pole in Qualifying | Raw speed metric |
-| 5 | Avg Pit Stop Time | Team execution under pressure |
-| 6 | Avg Number of Pit Stops | Strategy tendency |
-| 7 | Points Scored This Season | Form with DNF impact |
-| 8 | Lap Time Consistency (std dev) | Racecraft indicator |
-| 9 | DNFs This Season | Reliability signal |
-| 10 | Street Circuit Flag | Circuit type characteristics |
-| 11 | Weather: Dry/Wet | Wet races reshuffle everything |
-| 12 | Track Temperature (°C) | Tyre degradation factor |
- 
+
+### Feature Pool
+
+Features used vary per round depending on data availability and circuit characteristics. The pool includes:
+
+| Feature | Why It Matters |
+|---------|---------------|
+| **Grid / Sprint Position** | Saturday pace signal — used where qualifying or sprint data is available |
+| Avg Finishing Position (last 3 races) | Current driver form |
+| Finish Trend | Slope of recent results — improving or declining |
+| Constructor Avg Finish | Car pace indicator |
+| Points Per Race (season) | Weighted form including DNF impact |
+| Avg Lap Time Delta (vs winner) | Raw pace metric |
+| Tyre Consistency (std dev within stints) | Racecraft and smooth driving indicator |
+| Avg Grid Position (season) | Qualifying baseline when single-race grid not used |
+| DNF Count | Raw reliability signal |
+| Reliability Score | Points scored vs maximum possible — weights DNF cost by expected finish |
+| Street Circuit Flag | Circuit type characteristics |
+| Weather: Dry/Wet | Wet races reshuffle the order |
+| Track Temperature (°C) | Tyre degradation factor |
+
+> **Not every feature is used every round.** Each script documents exactly which features were active and why others were dropped.
+
 ---
- 
-## 🔬 MODEL PERFORMANCE · MIAMI GP (Round 6)
- 
-```
-╔══════════════════╦═══════╦═══════════╦════════╦═══════╗
-║ Model            ║  F1   ║ Precision ║ Recall ║  AUC  ║
-╠══════════════════╬═══════╬═══════════╬════════╬═══════╣
-║ XGBClassifier ✓  ║ 0.857 ║   0.750   ║ 1.000  ║ 0.968 ║
-║ Random Forest    ║ 0.419 ║   0.417   ║ 0.444  ║ 0.965 ║
-║ XGBRegressor     ║ MAE   ║   3.053   ║  pos   ║  —    ║
-╚══════════════════╩═══════╩═══════════╩════════╩═══════╝
- 
-Training · 3 races · 66 rows · Leave One Race Out CV
-Winner   · XGBClassifier (F1 Score primary metric)
-```
- 
-### Miami GP Pre-Qualifying Forecast
- 
-```
-🏆  P1  RUS  Mercedes    85.2% confidence
-🥈  P2  PIA  McLaren     84.5% confidence  
-🥉  P3  ANT  Mercedes    83.9% confidence
- 
-Top feature importances:
-  grid_position    ████████████████████  57.4%
-  season_points    ████████              15.2%
-  avg_pit_count    ███████               11.4%
-```
- 
+
+## 🤖 MODEL STRATEGY
+
+The model choice evolves round by round as the training dataset grows and circuit-specific factors change. Each prediction script documents what was used and why.
+
+| Approach | When Used |
+|----------|-----------|
+| **XGBClassifier** (single, LORO CV) | Early season — simple, interpretable, fast |
+| **VotingClassifier** (XGB + XGBReg + RF, GridSearch) | Sprint weekends — more signal available, ensemble reduces variance |
+| More to come | As data grows, more sophisticated approaches become viable |
+
+**Cross-validation** also adapts per round:
+- **LORO (Leave One Race Out)** — used when interpretability and small-data robustness matter
+- **GridSearch k-Fold** — used for hyperparameter tuning when ensemble voting is used
+
 ---
- 
+
 ## 🛠️ STACK
- 
+
 ```
 DATA LAYER          MODEL LAYER         API LAYER           UI LAYER
 ──────────          ───────────         ─────────           ────────
 FastF1              XGBoost             FastAPI             React 19
 Python 3.11         Random Forest       Uvicorn             Vite
 requests            scikit-learn        CORS Middleware      TanStack Router
-pandas              LORO Cross-Val      In-memory Cache     Tailwind CSS
+pandas              VotingClassifier    In-memory Cache     Tailwind CSS
 numpy               predict_proba()     JSON endpoints      shadcn/ui
 ```
- 
+
 ---
- 
+
 ## 📁 PROJECT STRUCTURE
- 
+
 ```
 dhirs-pit-wall/
 │
 ├── backend/
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── site_data.py        ← /api/v1/site-data endpoint
+│   │   │   └── site_data.py          ← /api/v1/site-data endpoint
 │   │   └── core/
-│   │       └── config.py           ← paths & config
+│   │       └── config.py             ← paths & config
 │   ├── scripts/
-│   │   ├── miami_prediction.py     ← Round 6
-│   │   └── [race]_prediction.py   ← one per race
+│   │   ├── miami_prediction.py       ← Round 4 · XGBClassifier · LORO
+│   │   ├── canada_prediction.py      ← Round 5 · VotingClassifier · GridSearch
+│   │   └── [race]_prediction.py      ← one per race going forward
 │   ├── data/
 │   │   └── predictions/
-│   │       └── miami-2026.json     ← model output
-│   └── main.py                     ← FastAPI entry point
+│   │       ├── miami-2026.json
+│   │       ├── canada-2026.json
+│   │       └── [race]-2026.json
+│   └── main.py                       ← FastAPI entry point
 │
 └── frontend/
     └── src/
         ├── routes/
-        │   ├── index.tsx           ← Dashboard
-        │   ├── predictions/        ← Prediction pages
-        │   └── history.tsx         ← Season archive
+        │   ├── index.tsx             ← Dashboard
+        │   ├── predictions/          ← Per-race prediction pages
+        │   └── history.tsx           ← Season archive
         ├── components/
         └── lib/
-            └── data.tsx            ← API context + helpers
+            └── data.tsx              ← API context + helpers
 ```
- 
+
 ---
- 
+
 ## 🚀 RUNNING LOCALLY
- 
+
 ### Backend
 ```bash
 cd backend
 python -m venv venv
 venv\Scripts\activate          # Windows
 source venv/bin/activate       # Mac/Linux
- 
+
 pip install -r requirements.txt
 uvicorn main:app --reload
 # → http://localhost:8000
 # → http://localhost:8000/docs  (Swagger UI)
 ```
- 
+
 ### Frontend
 ```bash
 cd frontend
@@ -160,72 +154,102 @@ npm install
 npm run dev
 # → http://localhost:5173
 ```
- 
+
 ---
- 
+
 ## 🔄 RACE PREDICTION WORKFLOW
- 
+
 ```
 THURSDAY          SATURDAY           SUNDAY            POST-RACE
 ────────          ────────           ──────            ─────────
-Run prediction    Qualifying done    Race day 🏁       Update results
-script with       ↓                  ↓                 ↓
-estimated grid    Fill MIAMI_GRID    Watch & enjoy     Fill actualResult
-↓                 Set QUALIFYING     ↓                 Add round to
-Pre-Qualifying    _DONE = True       Update            completed_rounds
-Forecast goes     Re-run script      standings         Hit /clear-cache
-live              Final Prediction   ↓                 ↓
-                  goes live          /clear-cache      Prediction vs
-                                                       Reality page
-                                                       updates
+Run prediction    Sprint / Quali     Race day 🏁       Update results
+script with       done               ↓                 ↓
+estimated grid    ↓                  Watch & enjoy     Fill actualResult
+↓                 Re-run script                        Add round to
+Pre-race          with real          ↓                 completed_rounds
+forecast          Saturday data      /clear-cache      Hit /clear-cache
+goes live         ↓                                    ↓
+                  Final prediction                     Prediction vs
+                  goes live                            Reality updates
 ```
- 
+
 ---
- 
-## ⚠️ KNOWN LIMITATIONS
- 
-- **Small dataset** — 66 rows (3 races × 22 drivers) is genuinely thin. Results should be interpreted with healthy scepticism.
-- **Regulation change** — Miami runs under revised FIA energy management rules. Training data ran under different regulations. Mitigated via `new_regs` binary feature.
-- **No historical track data** — No past Miami performance data used. Too few 2026 data points to include reliably.
-- **Pre-qualifying grid** — Before qualifying, grid position is estimated from 2026 average. Final prediction (post-qualifying) is significantly more reliable.
-- **New teams** — Cadillac data may be incomplete in FastF1 for early rounds.
----
- 
+
 ## 📅 2026 SEASON TRACKER
- 
-| Round | Race | Status | Prediction |
-|-------|------|--------|------------|
-| R01 | 🇦🇺 Australian GP | ✅ Completed | — |
-| R02 | 🇨🇳 Chinese GP | ✅ Completed | — |
-| R03 | 🇯🇵 Japanese GP | ✅ Completed | — |
-| R04 | 🇧🇭 Bahrain GP | ❌ Cancelled | — |
-| R05 | 🇸🇦 Saudi Arabian GP | ❌ Cancelled | — |
-| **R06** | **🇺🇸 Miami GP** | **🔴 Next** | **✅ Published** |
-| R07 | 🇮🇹 Emilia Romagna GP | ⏳ Upcoming | — |
-| R08 | 🇲🇨 Monaco GP | ⏳ Upcoming | — |
-| … | … | … | … |
- 
+
+| Round | Race | Status | Model Used | Prediction | Actual P1 |
+|-------|------|--------|------------|------------|-----------|
+| R01 | 🇦🇺 Australian GP | ✅ Completed | — | — | RUS |
+| R02 | 🇨🇳 Chinese GP | ✅ Completed | — | — | ANT |
+| R03 | 🇯🇵 Japanese GP | ✅ Completed | — | — | ANT |
+| R04 | 🇧🇭 Bahrain GP | ❌ Cancelled | — | — | — |
+| R05 | 🇸🇦 Saudi Arabian GP | ❌ Cancelled | — | — | — |
+| **R04** | **🇺🇸 Miami GP** | **✅ Completed** | XGBClassifier · LORO | ✅ Published | ANT |
+| **R05** | **🇨🇦 Canadian GP** | **✅ Completed** | VotingClassifier · GridSearch | ✅ Published | ANT |
+| **R06** | **🇲🇨 Monaco GP** | **🔴 Next** | TBD | ⏳ Pending | — |
+| R07 | 🇪🇸 Barcelona-Catalunya GP | ⏳ Upcoming | — | — | — |
+| R08 | 🇦🇹 Austrian GP | ⏳ Upcoming | — | — | — |
+| … | … | … | … | … | … |
+
+> **Note:** Bahrain and Saudi were cancelled due to regional disruption. The Emilia Romagna GP at Imola is not on the 2026 calendar. Round numbers reflect the revised 22-race schedule.
+
 ---
- 
-## 🏆 CHAMPIONSHIP STANDINGS (After R03)
- 
+
+## 🏆 CHAMPIONSHIP STANDINGS (After R05 · Canada)
+
 ```
 DRIVERS                          CONSTRUCTORS
 ───────                          ────────────
-1. ANT  Mercedes    68 pts       1. Mercedes     123 pts
-2. RUS  Mercedes    55 pts       2. Ferrari       77 pts
-3. LEC  Ferrari     42 pts       3. McLaren       38 pts
-4. HAM  Ferrari     35 pts       4. Haas          17 pts
-5. NOR  McLaren     20 pts       5. Alpine        16 pts
+1. ANT  Mercedes   131 pts       1. Mercedes    219 pts
+2. RUS  Mercedes    88 pts       2. Ferrari     147 pts
+3. LEC  Ferrari     75 pts       3. McLaren     106 pts
+4. HAM  Ferrari     72 pts       4. Red Bull     57 pts
+5. NOR  McLaren     58 pts       5. Alpine       35 pts
+6. PIA  McLaren     48 pts       6. Racing Bulls 21 pts
+7. VER  Red Bull    43 pts       7. Haas         19 pts
+8. GAS  Alpine      20 pts       8. Williams      7 pts
+9. BEA  Haas        18 pts       9. Audi          2 pts
+10. LAW Racing Bulls 16 pts
 ```
- 
+
 ---
- 
+
+## ⚠️ KNOWN LIMITATIONS
+
+- **Small dataset** — grows by ~22 rows per race. Early predictions are made on thin data and should be interpreted with healthy scepticism.
+- **Regulation change** — 2026 runs under revised FIA energy management rules. Training data from the same season mitigates this but the first few rounds carry uncertainty.
+- **Model drift** — the model choice and feature set evolve each round. Historical prediction JSONs preserve the exact approach used at the time.
+- **Sprint weekends** — sprint result is used as a feature post-Saturday. Pre-sprint forecasts fall back to grid/season-average proxies.
+- **Upgrade impact** — car upgrade packages (e.g. McLaren's Canada front wing, Cadillac's curb kit) are not capturable from historical lap data.
+- **New teams** — Cadillac data may be incomplete in FastF1 for early rounds.
+- **Street circuits** — Monaco and other street circuits have very limited historical lap time data making pace comparisons harder.
+
+---
+
+## 📋 PER-ROUND MODEL NOTES
+
+### R04 · Miami GP
+- **Model:** XGBClassifier (single)
+- **CV:** Leave One Race Out (LORO)
+- **Features:** 12 including grid position, weather, street circuit flag
+- **Key finding:** `grid_position` dominated at 57.4% importance — excluded in subsequent rounds
+
+### R05 · Canadian GP
+- **Model:** VotingClassifier — XGBClassifier + XGBRegressorClassifier + RandomForest (soft voting)
+- **CV:** GridSearch 3-fold for tuning; full train for final model
+- **Features:** 9 base features + `sprint_position` (post-Saturday)
+- **Key change:** Grid position removed by design; sprint result used as Saturday pace signal instead
+- **Training data:** Australia, China, Japan, Miami (88 rows)
+
+### R06 · Monaco GP
+- ⏳ Script in progress — approach TBD based on street circuit characteristics
+
+---
+
 *Forza Ferrari · Built by Dhir · F1 2026*
- 
+
 ```
 ████████████████████████████████████
 █  LIGHTS OUT AND AWAY WE GO  🏁   █
 ████████████████████████████████████
 ```
- 
