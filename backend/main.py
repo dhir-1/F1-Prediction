@@ -8,8 +8,9 @@ app = FastAPI(title="Dhir's Pit Wall API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173",
-                   "https://your-app.vercel.app",  
-                    "https://*.vercel.app",],
+                   "https://dhirs-pit-wall-git-main-dhirs-projects-5123a50d.vercel.app",
+                   "https://dhirs-pit-wall-37v9mnmtr-dhirs-projects-5123a50d.vercel.app",
+                   "https://*.vercel.app",],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
