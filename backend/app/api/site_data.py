@@ -376,7 +376,7 @@ TECH_STACK = [
 def _configure_fastf1() -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     fastf1.Cache.enable_cache(str(CACHE_DIR))
-    fastf1.Cache.offline_mode(True)
+
 
 
 def _clean_text(value: Any) -> str | None:
