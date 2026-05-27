@@ -1,10 +1,11 @@
 @import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,400;0,700;0,800;1,700;1,800;1,900&family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@1,400;1,700&display=swap');
+
+@source "../src";
 
 @custom-variant dark (&:is(.dark *));
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,400;0,700;0,800;1,700;1,800;1,900&family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@1,400;1,700&display=swap');
 
 @theme inline {
   --color-background: var(--background);
@@ -55,16 +56,16 @@
 
 :root {
   --radius: 0;
-  --background: oklch(0.18 0.005 30);          /* charcoal #1a1a1a */
+  --background: oklch(0.18 0.005 30);
   --foreground: oklch(0.18 0.005 30);
-  --cream: oklch(0.95 0.018 80);               /* #f2ede4 warm cream */
-  --cream-pink: oklch(0.95 0.025 25);          /* pink-tinted cream */
+  --cream: oklch(0.95 0.018 80);
+  --cream-pink: oklch(0.95 0.025 25);
   --charcoal: oklch(0.18 0.005 30);
   --ink: oklch(0.18 0.005 30);
-  --redorange: oklch(0.59 0.24 25);            /* #E8002D */
-  --blossom: oklch(0.86 0.06 5);               /* #f7b8c8 */
-  --rose: oklch(0.68 0.16 0);                  /* #e8628a */
-  --cyan: oklch(0.82 0.16 190);                /* #00e5d4 */
+  --redorange: oklch(0.59 0.24 25);
+  --blossom: oklch(0.86 0.06 5);
+  --rose: oklch(0.68 0.16 0);
+  --cyan: oklch(0.82 0.16 190);
   --gold: oklch(0.78 0.15 80);
 
   --sidebar: var(--charcoal);
@@ -82,7 +83,7 @@
   --chart-5: var(--blossom);
 }
 
-.dark { /* same — single theme */
+.dark {
   --background: oklch(0.18 0.005 30);
   --foreground: oklch(0.95 0.018 80);
 }
