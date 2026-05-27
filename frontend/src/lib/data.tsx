@@ -110,9 +110,10 @@ const SiteDataContext = createContext<SiteData | null>(null);
 export function SiteDataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<SiteData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const API_BASE = import.meta.env.VITE_API_URL ?? "";
 
   useEffect(() => {
-    fetch("/api/v1/site-data")
+    fetch(`${API_BASE}/api/v1/site-data`)
       .then((res) => {
         if (!res.ok) throw new Error(`API returned ${res.status}`);
         return res.json();
