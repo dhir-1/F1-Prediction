@@ -1,8 +1,6 @@
-import type { ReactNode } from "react";
-import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
 import { SakuraOverlay } from "../components/SakuraOverlay";
 import { SiteDataProvider } from "@/lib/data";
-import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -22,41 +20,9 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Dhir's Pit Wall - 2026 F1 Predictions" },
-      {
-        name: "description",
-        content:
-          "Vintage racing magazine meets modern F1 prediction. Dhir's Pit Wall covers the 2026 Formula One season.",
-      },
-      { property: "og:title", content: "Dhir's Pit Wall - 2026 F1 Predictions" },
-      { property: "og:description", content: "Vintage racing magazine meets modern F1 prediction." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-    links: [{ rel: "stylesheet", href: appCss }],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   return (
