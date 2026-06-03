@@ -480,6 +480,12 @@ def _team_color(value: Any) -> str:
 
 def _prediction_result_summary(prediction: dict[str, Any]) -> dict[str, Any] | None:
     actual = prediction.get("actualResult") or []
+    if isinstance(actual, dict):
+        actual = [
+            {"pos": 1, "driver": actual.get("P1")},
+            {"pos": 2, "driver": actual.get("P2")},
+            {"pos": 3, "driver": actual.get("P3")},
+        ]
     if not actual:
         return None
     ordered = sorted(actual, key=lambda item: int(item.get("pos", 999)))
