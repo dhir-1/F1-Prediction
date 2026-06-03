@@ -18,6 +18,87 @@ _cache: dict[str, Any] = {"data": None, "timestamp": 0.0}
 CACHE_TTL_SECONDS = 300
 
 
+def _normalize_prediction_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    """
+    Coerce race-prediction JSON into the shared dashboard shape.
+
+    Monaco currently emits a more bespoke training artifact, so we map its
+    fields into the same structure used by the rest of the site.
+    """
+    if "podium" in raw and "grid" in raw:
+        return raw
+
+    if "prediction" in raw and "fullProbabilities" in raw:
+        podium = []
+        for pos_key in ("P1", "P2", "P3"):
+            entry = raw.get("prediction", {}).get(pos_key)
+            if not entry:
+                continue
+            podium.append(
+                {
+                    "code": entry.get("driver"),
+                    "team": entry.get("constructor", ""),
+                    "confidence": float(entry.get("confidence", 0.0)),
+                    "pos": int(pos_key[1:]),
+                }
+            )
+
+        grid = []
+        for idx, entry in enumerate(raw.get("fullProbabilities", []), start=1):
+            grid.append(
+                {
+                    "code": entry.get("driver"),
+                    "team": entry.get("constructor", ""),
+                    "probability": float(entry.get("podiumProb", 0.0)),
+                    "predictedPosition": idx,
+                    "gridPosition": entry.get("gridPosition") or 10,
+                    "gridSource": "Not used",
+                }
+            )
+
+        actual_result = raw.get("actualResult") or []
+        if isinstance(actual_result, dict):
+            actual_result = [
+                {"pos": 1, "driver": actual_result.get("P1")},
+                {"pos": 2, "driver": actual_result.get("P2")},
+                {"pos": 3, "driver": actual_result.get("P3")},
+            ]
+
+        features = [
+            {"key": key, "name": key.replace("_", " ").title(), "weight": value, "rawWeight": value}
+            for key, value in raw.get("featureImportance", {}).items()
+        ]
+
+        return {
+            "slug": "monaco-grand-prix",
+            "raceName": raw.get("race", "Monaco Grand Prix"),
+            "round": raw.get("round", 6),
+            "circuit": raw.get("circuit", "Circuit de Monaco"),
+            "date": raw.get("date", "2026-06-08"),
+            "status": "Pre-Qualifying Prediction" if not raw.get("qualifyingDone") else "Final Prediction",
+            "qualifyingDone": bool(raw.get("qualifyingDone", False)),
+            "modelUsed": raw.get("modelVersion", "Monaco VotingClassifier"),
+            "podium": podium,
+            "grid": grid,
+            "podiumProb": {entry["code"]: entry["confidence"] for entry in podium},
+            "features": features,
+            "metrics": {
+                "f1": float(raw.get("modelMetrics", {}).get("hyperparameterTuning", {}).get("XGBoost", {}).get("optuna_f1", 0.0)),
+                "precision": 0.0,
+                "recall": 0.0,
+                "auc": 0.0,
+            },
+            "trainingData": {
+                "races": raw.get("trainingRaces", []),
+                "rows": int(raw.get("trainingRows", 0)),
+                "cvMethod": raw.get("modelMetrics", {}).get("estimators", ["VotingClassifier"])[0],
+            },
+            "limitations": raw.get("pitWallNotes", []),
+            "actualResult": actual_result,
+            "pitWallNotes": raw.get("pitWallNotes", []),
+        }
+
+
 SEASON_SCHEDULE: list[dict[str, Any]] = [
     {
         "round": 1,

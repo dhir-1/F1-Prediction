@@ -119,7 +119,9 @@ export function SiteDataProvider({ children }: { children: ReactNode }) {
         return res.json();
       })
       .then((raw) => {
-        const predictions: RacePrediction[] = raw.predictions ?? [];
+        const predictions: RacePrediction[] = (raw.predictions ?? []).map((prediction: any) =>
+          normalizePrediction(prediction),
+        );
         const miamiPrediction =
           predictions.find((p) => p.slug === "miami-grand-prix") ?? predictions[0] ?? null;
         setData({
@@ -173,6 +175,77 @@ export function useSiteData(): SiteData {
   const ctx = useContext(SiteDataContext);
   if (!ctx) throw new Error("useSiteData must be used within SiteDataProvider");
   return ctx;
+}
+
+function normalizePrediction(raw: any): RacePrediction {
+  if (raw?.podium && raw?.grid) return raw as RacePrediction;
+
+  const podiumSource = raw?.prediction ?? {};
+  const podium = ["P1", "P2", "P3"]
+    .map((key, idx) => {
+      const entry = podiumSource[key];
+      if (!entry) return null;
+      return {
+        code: entry.driver,
+        team: entry.constructor ?? "",
+        confidence: Number(entry.confidence ?? 0),
+        pos: idx + 1,
+      };
+    })
+    .filter(Boolean) as RacePrediction["podium"];
+
+  const grid = (raw?.fullProbabilities ?? []).map((entry: any, idx: number) => ({
+    code: entry.driver,
+    team: entry.constructor ?? "",
+    probability: Number(entry.podiumProb ?? 0),
+    predictedPosition: idx + 1,
+    gridPosition: entry.gridPosition ?? 10,
+    gridSource: "Not used",
+  })) as RacePrediction["grid"];
+
+  const featureEntries = Object.entries(raw?.featureImportance ?? {}).map(([key, weight]) => ({
+    key,
+    name: key.replace(/_/g, " ").replace(/\b\w/g, (s) => s.toUpperCase()),
+    weight: Number(weight ?? 0),
+    rawWeight: Number(weight ?? 0),
+  })) as RacePrediction["features"];
+
+  const actualResult = Array.isArray(raw?.actualResult)
+    ? raw.actualResult
+    : raw?.actualResult && typeof raw.actualResult === "object"
+      ? ["P1", "P2", "P3"]
+          .map((key, idx) => raw.actualResult[key] ? { pos: idx + 1, driver: raw.actualResult[key] } : null)
+          .filter(Boolean)
+      : undefined;
+
+  return {
+    slug: raw?.slug ?? "monaco-grand-prix",
+    raceName: raw?.race ?? raw?.raceName ?? "Monaco Grand Prix",
+    round: Number(raw?.round ?? 6),
+    circuit: raw?.circuit ?? "Circuit de Monaco",
+    date: raw?.date ?? "2026-06-08",
+    status: raw?.qualifyingDone ? "Final Prediction" : "Pre-Qualifying Prediction",
+    qualifyingDone: Boolean(raw?.qualifyingDone ?? false),
+    modelUsed: raw?.modelVersion ?? raw?.modelUsed ?? "Monaco VotingClassifier",
+    podium,
+    grid,
+    podiumProb: Object.fromEntries(podium.map((item) => [item.code, item.confidence])),
+    features: featureEntries,
+    metrics: {
+      f1: Number(raw?.modelMetrics?.hyperparameterTuning?.XGBoost?.optuna_f1 ?? 0),
+      precision: 0,
+      recall: 0,
+      auc: 0,
+    },
+    trainingData: {
+      races: raw?.trainingRaces ?? raw?.trainingData?.races ?? [],
+      rows: Number(raw?.trainingRows ?? raw?.trainingData?.rows ?? 0),
+      cvMethod: raw?.trainingData?.cvMethod ?? raw?.modelMetrics?.estimators?.[0] ?? "VotingClassifier",
+    },
+    limitations: raw?.limitations ?? raw?.pitWallNotes ?? [],
+    actualResult: actualResult as RacePrediction["actualResult"],
+    pitWallNotes: raw?.pitWallNotes ?? [],
+  };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

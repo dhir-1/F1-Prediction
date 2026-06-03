@@ -1,0 +1,244 @@
+{
+  "round": 6,
+  "race": "Monaco Grand Prix",
+  "circuit": "Circuit de Monaco",
+  "date": "2026-06-08",
+  "season": 2026,
+  "qualifyingDone": false,
+  "modelVersion": "v3.0-monaco-voting",
+  "trainingRaces": [
+    "Australia",
+    "China",
+    "Japan",
+    "Miami",
+    "Canada"
+  ],
+  "trainingRows": 100,
+  "prediction": {
+    "P1": {
+      "driver": "ANT",
+      "constructor": "Mercedes",
+      "confidence": 97.9
+    },
+    "P2": {
+      "driver": "HAM",
+      "constructor": "Ferrari",
+      "confidence": 69.5
+    },
+    "P3": {
+      "driver": "VER",
+      "constructor": "RedBull",
+      "confidence": 52.6
+    }
+  },
+  "fullProbabilities": [
+    {
+      "driver": "ANT",
+      "constructor": "Mercedes",
+      "podiumProb": 97.9,
+      "gridPosition": null
+    },
+    {
+      "driver": "HAM",
+      "constructor": "Ferrari",
+      "podiumProb": 69.5,
+      "gridPosition": null
+    },
+    {
+      "driver": "VER",
+      "constructor": "RedBull",
+      "podiumProb": 52.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "PIA",
+      "constructor": "McLaren",
+      "podiumProb": 15.5,
+      "gridPosition": null
+    },
+    {
+      "driver": "RUS",
+      "constructor": "Mercedes",
+      "podiumProb": 5.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "BOR",
+      "constructor": "Sauber",
+      "podiumProb": 5.4,
+      "gridPosition": null
+    },
+    {
+      "driver": "COL",
+      "constructor": "Alpine",
+      "podiumProb": 4.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "HUL",
+      "constructor": "Sauber",
+      "podiumProb": 3.2,
+      "gridPosition": null
+    },
+    {
+      "driver": "PER",
+      "constructor": "RedBull",
+      "podiumProb": 2.9,
+      "gridPosition": null
+    },
+    {
+      "driver": "LEC",
+      "constructor": "Ferrari",
+      "podiumProb": 1.9,
+      "gridPosition": null
+    },
+    {
+      "driver": "NOR",
+      "constructor": "McLaren",
+      "podiumProb": 1.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "STR",
+      "constructor": "Aston",
+      "podiumProb": 0.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "TSU",
+      "constructor": "RB",
+      "podiumProb": 0.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "GAS",
+      "constructor": "RB",
+      "podiumProb": 0.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "OCO",
+      "constructor": "Alpine",
+      "podiumProb": 0.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "BOT",
+      "constructor": "Cadillac",
+      "podiumProb": 0.6,
+      "gridPosition": null
+    },
+    {
+      "driver": "SAI",
+      "constructor": "Williams",
+      "podiumProb": 0.2,
+      "gridPosition": null
+    },
+    {
+      "driver": "LIN",
+      "constructor": "Cadillac",
+      "podiumProb": 0.1,
+      "gridPosition": null
+    },
+    {
+      "driver": "ALO",
+      "constructor": "Aston",
+      "podiumProb": 0.1,
+      "gridPosition": null
+    },
+    {
+      "driver": "ALB",
+      "constructor": "Williams",
+      "podiumProb": 0.1,
+      "gridPosition": null
+    }
+  ],
+  "actualResult": {
+    "P1": null,
+    "P2": null,
+    "P3": null
+  },
+  "modelMetrics": {
+    "ensemble": "SoftVotingClassifier",
+    "estimators": [
+      "XGBClassifier",
+      "LGBMClassifier",
+      "RandomForestClassifier"
+    ],
+    "weights": [
+      2,
+      1,
+      1
+    ],
+    "cvFolds": 5,
+    "cvScoring": "f1",
+    "hyperparameterTuning": {
+      "XGBoost": {
+        "method": "Optuna",
+        "gridsearch_f1": 0.7133,
+        "optuna_f1": 0.7267,
+        "winner_params": {
+          "max_depth": 3,
+          "n_estimators": 121,
+          "learning_rate": 0.16214227441177345,
+          "subsample": 0.7371197153065265,
+          "colsample_bytree": 0.7024826713798779,
+          "reg_lambda": 1.0202898667234672,
+          "use_label_encoder": false,
+          "eval_metric": "logloss",
+          "random_state": 42
+        }
+      },
+      "LGBM": {
+        "method": "GridSearchCV",
+        "gridsearch_f1": 0.7914,
+        "optuna_f1": 0.7914,
+        "winner_params": {
+          "learning_rate": 0.05,
+          "max_depth": 3,
+          "n_estimators": 150,
+          "num_leaves": 15,
+          "reg_lambda": 1.0,
+          "subsample": 0.7,
+          "random_state": 42,
+          "verbose": -1
+        }
+      },
+      "RandomForest": {
+        "method": "GridSearchCV",
+        "gridsearch_f1": 0.7914,
+        "optuna_f1": 0.7914,
+        "winner_params": {
+          "max_depth": 4,
+          "max_features": "sqrt",
+          "min_samples_split": 2,
+          "n_estimators": 100,
+          "random_state": 42
+        }
+      }
+    }
+  },
+  "featureImportance": {
+    "grid_position": 24.6,
+    "avg_grid_position": 4.1,
+    "avg_finish_last3": 41.5,
+    "finish_trend": 7.9,
+    "points_per_race": 5.9,
+    "avg_lap_time_delta": 3.9,
+    "constructor_avg_finish": 5.4,
+    "reliability_score": 2.5,
+    "avg_sprint_position": 4.2
+  },
+  "pitWallNotes": [
+    "Monaco 2026: Active aero disabled by FIA \u2014 mechanical grip only.",
+    "Boost Button remains the PRIMARY overtake mechanism: Portier \u2192 Nouvelle Chicane.",
+    "Electric power capped at 200km/h \u2014 tunnel insanity prevented.",
+    "Cars 10cm narrower in 2026 regs \u2014 breathing room exists but passing still near-impossible.",
+    "reliability_score weighted heavily: wall-contact + Boost Button aggression = high DNF risk.",
+    "constructor_avg_finish captures energy deployment advantage under 2026 regulations.",
+    "Russell DNF (Canada power unit) flagged in reliability_score \u2014 watch for Monaco setup compromise.",
+    "Antonelli 4x consecutive wins \u2014 psychological pressure factor not modelled.",
+    "Grid dominance fix applied: XGB reg_lambda=5.0, colsample_bytree=0.7. grid_position importance: 24.6% (target 35-45%).",
+    "Tuning method winners \u2014 XGB: Optuna, LGBM: GridSearchCV, RF: GridSearchCV."
+  ]
+}
