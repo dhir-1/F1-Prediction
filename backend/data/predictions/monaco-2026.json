@@ -233,9 +233,9 @@
     "cvMethod": "Optuna \u00b7 5-fold \u00b7 f1"
   },
   "actualResult": {
-    "P1": null,
-    "P2": null,
-    "P3": null
+    "P1": "ANT",
+    "P2": "HAM",
+    "P3": "HAD"
   },
   "pitWallNotes": [
     "Monaco 2026: Active aero disabled by FIA \u2014 mechanical grip only.",
