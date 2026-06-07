@@ -1,319 +1,99 @@
-"""
-monaco_prediction.py — Dhir's Pit Wall · Round 6 · Monaco GP · June 7, 2026
+﻿"""
+monaco_prediction.py — Dhir's Pit Wall · Round 6 · Monaco GP · June 8, 2026
 =============================================================================
 Training data : 5 completed 2026 races (Australia, China, Japan, Miami, Canada)
-                ~110 rows (22 drivers × 5 races)
-Features      : 9 (see FEATURES dict below)
-Models        : SoftVotingClassifier — XGBClassifier + LGBMClassifier + RandomForestClassifier
-Tuning        : GridSearchCV vs Optuna comparison experiment (5-fold CV, f1 scoring)
-Target        : podium finish (top 3) = 1, else 0
-Output        : backend/data/predictions/monaco-2026.json
+Features      : grid_position, avg_grid_position, avg_finish_last3, finish_trend,
+                points_per_race, avg_lap_time_delta (Q3 quali), constructor_avg_finish,
+                dnf_count, monaco_grid_penalty (grid_position^2)
+Models        : SoftVotingClassifier — XGBClassifier + XGBRegressorClassifier + LGBMClassifier
+                + CalibratedClassifierCV (sigmoid, prefit) to fix overconfidence
+Tuning        : Optuna only, 5-fold CV, f1 scoring
+Data          : FastF1 for all lap times, results, Monaco Q3
 
 WORKFLOW
 --------
-  Thursday : Run with QUALIFYING_DONE = False  → pre-qualifying forecast
-  Saturday : Set QUALIFYING_DONE = True, fill MONACO_QUALIFYING_GRID → final prediction
-  Sunday   : Race. Update actualResult in JSON.
-
-Grid dominance fix: XGBClassifier regularised via reg_lambda=5.0, colsample_bytree=0.7
-Target grid_position importance: 35-45% (was 57.4% at Miami)
+  Before qualifying : USE_GRID_POSITION=False, QUALIFYING_DONE=False
+  After qualifying  : USE_GRID_POSITION=True,  QUALIFYING_DONE=True
+  After race        : fill actualResult in JSON
 """
 
 import json
 import warnings
 from pathlib import Path
+
+import fastf1
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
-from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from sklearn.metrics import f1_score
-from sklearn.preprocessing import LabelEncoder
-from xgboost import XGBClassifier
-from lightgbm import LGBMClassifier
 import optuna
 from optuna.samplers import TPESampler
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import f1_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from lightgbm import LGBMClassifier
+from xgboost import XGBClassifier, XGBRegressor
+
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
 
-# ──────────────────────────────────────────────────────────────────────────────
-# CONFIGURATION
-# ──────────────────────────────────────────────────────────────────────────────
 
-QUALIFYING_DONE = False          # Flip to True after Saturday qualifying
-ROUND_NUMBER    = 6
-RACE_NAME       = "Monaco Grand Prix"
-CIRCUIT         = "Circuit de Monaco"
-RACE_DATE       = "2026-06-08"   # Sunday race date
+# =============================================================================
+# SECTION 0 — SETTINGS
+# =============================================================================
 
-OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data" / "predictions" / "monaco-2026.json"
+QUALIFYING_DONE   = True
+USE_GRID_POSITION = True
 
-# Monaco 2026 qualifying grid — fill after Saturday
-# Key: driver code, Value: grid position (1 = pole)
-MONACO_QUALIFYING_GRID = {
-    "ANT": 1,   # Estimated — replace with actual after qualifying
-    "RUS": 2,
-    "LEC": 3,
-    "HAM": 4,
-    "NOR": 5,
-    "PIA": 6,
-    "VER": 7,
-    "SAI": 8,
-    "ALO": 9,
-    "HUL": 10,
-    "OCO": 11,
-    "STR": 12,
-    "BOT": 13,
-    "TSU": 14,
-    "GAS": 15,
-    "ALB": 16,
-    "BOR": 17,
-    "COL": 18,
-    "PER": 19,
-    "LIN": 20,
-}
+ROUND_NUMBER = 6
+RACE_NAME    = "Monaco Grand Prix"
+CIRCUIT      = "Circuit de Monaco"
+RACE_DATE    = "2026-06-08"
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 2026 RACE RESULTS (5 completed rounds — training ground truth)
-# ──────────────────────────────────────────────────────────────────────────────
-# Format: driver_code → [AUS_finish, CHN_finish, JPN_finish, MIA_finish, CAN_finish]
-# DNF → 20 (treated as last place for avg calculations)
+SCRIPT_DIR  = Path(__file__).resolve().parent
+BACKEND_DIR = SCRIPT_DIR.parent
+CACHE_DIR   = BACKEND_DIR / "data" / "fastf1_cache"
+OUTPUT_FILE = BACKEND_DIR / "data" / "predictions" / "monaco-2026.json"
 
-RESULTS_2026 = {
-    # R1=AUS  R2=CHN  R3=JPN  R4=MIA  R5=CAN
-    "RUS": [1,   2,   4,   4,   20],   # DNF Canada (power unit)
-    "ANT": [2,   1,   1,   1,    1],
-    "LEC": [3,   5,   3,   9,    4],
-    "HAM": [6,   3,   6,   7,    2],
-    "PIA": [5,   4,   2,   3,    6],
-    "NOR": [4,   6,   5,   2,   20],   # DNF Canada
-    "VER": [8,  10,   7,   5,    3],
-    "SAI": [7,   7,   8,  10,    5],
-    "ALO": [9,   8,   9,   8,   20],   # DNF Canada
-    "HUL": [10,  9,  10,  11,    7],
-    "OCO": [11, 11,  11,  12,    9],
-    "STR": [12, 12,  12,  13,   10],
-    "BOT": [13, 13,  13,  14,   11],
-    "TSU": [14, 14,  14,  15,   12],
-    "GAS": [15, 15,  15,  16,   13],
-    "ALB": [16, 16,  16,  17,   20],   # DNF Canada
-    "BOR": [17, 17,  17,  18,    8],
-    "COL": [18, 18,  18,  19,   14],
-    "PER": [19, 19,  19,   6,   20],   # DNF Canada
-    "LIN": [20, 20,  20,  20,   20],   # DNF/No start across multiple
-}
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+fastf1.Cache.enable_cache(str(CACHE_DIR))
 
-# Qualifying grid positions per race
-QUALI_2026 = {
-    # R1=AUS  R2=CHN  R3=JPN  R4=MIA  R5=CAN
-    "RUS": [2,   2,   3,   3,    1],
-    "ANT": [1,   1,   1,   1,    2],
-    "LEC": [3,   4,   4,   8,    4],
-    "HAM": [6,   3,   6,   6,    5],
-    "PIA": [5,   5,   2,   2,    6],
-    "NOR": [4,   6,   5,   4,    3],
-    "VER": [8,   9,   7,   5,    7],
-    "SAI": [7,   7,   8,   9,    8],
-    "ALO": [9,   8,   9,   7,   10],
-    "HUL": [10,  10,  10,  11,    9],
-    "OCO": [11,  11,  11,  12,   11],
-    "STR": [12,  12,  12,  13,   12],
-    "BOT": [13,  13,  13,  14,   13],
-    "TSU": [14,  14,  14,  15,   14],
-    "GAS": [15,  15,  15,  16,   15],
-    "ALB": [16,  16,  16,  17,   16],
-    "BOR": [17,  17,  17,  18,   17],
-    "COL": [18,  18,  18,  19,   18],
-    "PER": [19,  19,  19,   6,   19],
-    "LIN": [20,  20,  20,  20,   20],
-}
-
-# Sprint results (Miami R4, Canada R5) — NaN for non-sprint races
-SPRINT_2026 = {
-    # MIA sprint  CAN sprint
-    "ANT": [3,   3],
-    "RUS": [2,   1],
-    "NOR": [1,   2],
-    "PIA": [4,   4],
-    "LEC": [6,   5],
-    "HAM": [8,   6],
-    "VER": [5,   7],
-    "SAI": [7,   8],
-    "HUL": [9,   9],
-    "ALO": [10, 10],
-    "OCO": [11, 11],
-    "STR": [12, 12],
-    "BOT": [13, 13],
-    "TSU": [14, 14],
-    "GAS": [15, 15],
-    "ALB": [16, 16],
-    "BOR": [17, 17],
-    "COL": [18, 18],
-    "PER": [19, 19],
-    "LIN": [20, 20],
-}
-
-# Avg lap time delta vs session fastest (lower = faster)
-# Approximated from FastF1 session data — update from actual telemetry if available
-AVG_LAP_TIME_DELTA = {
-    "ANT": 0.12, "RUS": 0.18, "LEC": 0.25, "HAM": 0.31, "PIA": 0.22,
-    "NOR": 0.20, "VER": 0.35, "SAI": 0.41, "ALO": 0.52, "HUL": 0.67,
-    "OCO": 0.71, "STR": 0.75, "BOT": 0.80, "TSU": 0.88, "GAS": 0.92,
-    "ALB": 0.98, "BOR": 1.05, "COL": 1.12, "PER": 1.18, "LIN": 1.45,
-}
-
-# Season points after R5 Canada
-SEASON_POINTS = {
-    "ANT": 131, "RUS": 88,  "LEC": 75,  "HAM": 72,  "PIA": 58,
-    "NOR": 50,  "VER": 35,  "SAI": 32,  "ALO": 18,  "HUL": 16,
-    "OCO": 12,  "STR": 10,  "BOT": 8,   "TSU": 6,   "GAS": 5,
-    "ALB": 4,   "BOR": 14,  "COL": 3,   "PER": 9,   "LIN": 0,
-}
-
-# Constructor assignment
-CONSTRUCTORS = {
-    "ANT": "Mercedes", "RUS": "Mercedes",
-    "LEC": "Ferrari",  "HAM": "Ferrari",
-    "PIA": "McLaren",  "NOR": "McLaren",
-    "VER": "RedBull",  "PER": "RedBull",
-    "SAI": "Williams", "ALB": "Williams",
-    "ALO": "Aston",    "STR": "Aston",
-    "HUL": "Sauber",   "BOR": "Sauber",
-    "OCO": "Alpine",   "COL": "Alpine",
-    "BOT": "Cadillac", "LIN": "Cadillac",
-    "TSU": "RB",       "GAS": "RB",
-}
-
-# Constructor average finish (lower = better) — computed from race results
-CONSTRUCTOR_AVG_FINISH = {
-    "Mercedes": np.mean([np.mean(RESULTS_2026["ANT"]), np.mean(RESULTS_2026["RUS"])]),
-    "Ferrari":  np.mean([np.mean(RESULTS_2026["LEC"]), np.mean(RESULTS_2026["HAM"])]),
-    "McLaren":  np.mean([np.mean(RESULTS_2026["PIA"]), np.mean(RESULTS_2026["NOR"])]),
-    "RedBull":  np.mean([np.mean(RESULTS_2026["VER"]), np.mean(RESULTS_2026["PER"])]),
-    "Williams": np.mean([np.mean(RESULTS_2026["SAI"]), np.mean(RESULTS_2026["ALB"])]),
-    "Aston":    np.mean([np.mean(RESULTS_2026["ALO"]), np.mean(RESULTS_2026["STR"])]),
-    "Sauber":   np.mean([np.mean(RESULTS_2026["HUL"]), np.mean(RESULTS_2026["BOR"])]),
-    "Alpine":   np.mean([np.mean(RESULTS_2026["OCO"]), np.mean(RESULTS_2026["COL"])]),
-    "Cadillac": np.mean([np.mean(RESULTS_2026["BOT"]), np.mean(RESULTS_2026["LIN"])]),
-    "RB":       np.mean([np.mean(RESULTS_2026["TSU"]), np.mean(RESULTS_2026["GAS"])]),
-}
-
-# Reliability score — (races completed / races entered), penalised by DNF count
-# Canada had 6 DNFs, factor that into Monaco reliability concern
-RELIABILITY_SCORE = {
-    "ANT": 1.00, "RUS": 0.80,  # Russell DNF Canada
-    "LEC": 1.00, "HAM": 1.00,
-    "PIA": 1.00, "NOR": 0.80,  # Norris DNF Canada
-    "VER": 1.00, "PER": 0.70,  # Perez DNF Canada + other issues
-    "SAI": 1.00, "ALB": 0.80,  # Albon DNF Canada
-    "ALO": 0.80, "STR": 1.00,  # Alonso DNF Canada
-    "HUL": 1.00, "BOR": 1.00,
-    "OCO": 1.00, "COL": 1.00,
-    "BOT": 1.00, "LIN": 0.75,  # Lindblad multiple DNFs/non-starts
-    "TSU": 1.00, "GAS": 1.00,
-}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# FEATURE ENGINEERING
-# ──────────────────────────────────────────────────────────────────────────────
-
-DRIVERS = list(RESULTS_2026.keys())
-NUM_RACES = 5   # Australia, China, Japan, Miami, Canada
-
-
-def compute_finish_trend(finishes: list) -> float:
-    """Linear regression slope of recent finishes — directional form signal."""
-    if len(finishes) < 2:
-        return 0.0
-    x = np.arange(len(finishes), dtype=float)
-    y = np.array(finishes, dtype=float)
-    slope = np.polyfit(x, y, 1)[0]
-    return round(slope, 4)
-
-
-def build_training_rows() -> pd.DataFrame:
-    """
-    Build one row per (driver, race) for all 5 completed races.
-    Target: podium (finish P1/P2/P3) = 1, else 0.
-    ~110 rows (20 drivers × 5 races, minus any dropped anomalies).
-    """
-    rows = []
-
-    for driver in DRIVERS:
-        finishes  = RESULTS_2026[driver]       # [AUS, CHN, JPN, MIA, CAN]
-        quali     = QUALI_2026[driver]
-        sprints   = SPRINT_2026[driver]        # [MIA, CAN] only
-        constructor = CONSTRUCTORS[driver]
-
-        for race_idx in range(NUM_RACES):
-            finish       = finishes[race_idx]
-            grid_pos     = quali[race_idx]
-            is_sprint_wk = race_idx >= 3       # Miami (idx=3) and Canada (idx=4)
-
-            # avg_grid_position: season average up to and including this race
-            avg_grid = np.mean(quali[:race_idx + 1])
-
-            # avg_finish_last3: rolling average of last 3 finishes (or fewer at start)
-            last3 = finishes[max(0, race_idx - 2): race_idx + 1]
-            avg_finish_last3 = np.mean(last3)
-
-            # finish_trend: slope of all finishes leading up to this race
-            trend_data = finishes[:race_idx + 1]
-            finish_trend = compute_finish_trend(trend_data)
-
-            # points_per_race: cumulative points / races so far
-            # Approximate from final standings — simplified
-            ppr = SEASON_POINTS[driver] / NUM_RACES
-
-            # avg_sprint_position: average across available sprints
-            # NaN-fill with avg_grid_position for non-sprint drivers
-            if is_sprint_wk:
-                sprint_idx = race_idx - 3      # 0 for Miami, 1 for Canada
-                sprint_pos = sprints[sprint_idx]
-            else:
-                sprint_pos = avg_grid          # NaN fill strategy: use avg_grid
-
-            avg_sprint = np.mean([
-                sprints[i] for i in range(sprint_idx + 1 if is_sprint_wk else 0)
-            ]) if is_sprint_wk else avg_grid
-
-            row = {
-                "driver":               driver,
-                "race_idx":             race_idx,
-                # ── 9 model features ──────────────────────────────────────
-                "grid_position":        grid_pos,
-                "avg_grid_position":    round(avg_grid, 3),
-                "avg_finish_last3":     round(avg_finish_last3, 3),
-                "finish_trend":         finish_trend,
-                "points_per_race":      round(ppr, 3),
-                "avg_lap_time_delta":   AVG_LAP_TIME_DELTA[driver],
-                "constructor_avg_finish": round(CONSTRUCTOR_AVG_FINISH[constructor], 3),
-                "reliability_score":    RELIABILITY_SCORE[driver],
-                "avg_sprint_position":  round(avg_sprint, 3),
-                # ── target ────────────────────────────────────────────────
-                "podium":               1 if finish <= 3 else 0,
-            }
-            rows.append(row)
-
-    df = pd.DataFrame(rows)
-    return df
-
-
-FEATURES = [
-    "grid_position",
-    "avg_grid_position",
-    "avg_finish_last3",
-    "finish_trend",
-    "points_per_race",
-    "avg_lap_time_delta",
-    "constructor_avg_finish",
-    "reliability_score",
-    "avg_sprint_position",
+TRAINING_RACES = [
+    (2026, "Australia", "R"),
+    (2026, "China",     "R"),
+    (2026, "Japan",     "R"),
+    (2026, "Miami",     "R"),
+    (2026, "Canada",    "R"),
 ]
 
+MONACO_QUALIFYING_GRID = {
+    "ANT": 1,
+    "VER": 2,
+    "HAM": 3,
+    "LEC": 4,
+    "HAD": 5,
+    "RUS": 6,
+    "PIA": 7,
+    "NOR": 8,
+    "GAS": 9,
+    "LAW": 10,
+    "ALB": 11,
+    "SAI": 12,
+    "HUL": 13,
+    "COL": 14,
+    "LIN": 15,
+    "BOR": 16,
+    "OCO": 17,
+    "PER": 18,
+    "BEA": 19,
+    "BOT": 20,
+    "ALO": 21,
+    "STR": 22,
+}
 
-# ──────────────────────────────────────────────────────────────────────────────
-# HYPERPARAMETER TUNING — GridSearchCV vs Optuna
-# ──────────────────────────────────────────────────────────────────────────────
+MAX_POINTS_PER_RACE = 25
+TOTAL_RACES         = len(TRAINING_RACES)
+MAX_POSSIBLE_POINTS = MAX_POINTS_PER_RACE * TOTAL_RACES  # 125
 
 CV_FOLDS    = 5
 CV_SCORING  = "f1"
@@ -321,375 +101,526 @@ N_OPTUNA    = 50
 RANDOM_SEED = 42
 
 
-def tune_xgb_gridsearch(X: np.ndarray, y: np.ndarray) -> dict:
-    """GridSearchCV for XGBClassifier. Returns best params + CV score."""
-    param_grid = {
-        "max_depth":       [2, 3, 4],
-        "n_estimators":    [50, 100, 150],
-        "learning_rate":   [0.05, 0.1, 0.2],
-        "subsample":       [0.7, 0.8, 1.0],
-        "colsample_bytree": [0.6, 0.7, 0.8],
-        "reg_lambda":      [3.0, 5.0, 8.0],
-    }
-    base = XGBClassifier(
-        use_label_encoder=False,
-        eval_metric="logloss",
-        random_state=RANDOM_SEED,
-    )
-    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-    gs = GridSearchCV(base, param_grid, cv=cv, scoring=CV_SCORING, n_jobs=-1, verbose=0)
-    gs.fit(X, y)
-    return {"best_params": gs.best_params_, "best_score": gs.best_score_}
+# =============================================================================
+# SECTION 1 — FEATURE COLUMNS
+# =============================================================================
+
+_ALL_FEATURES = [
+    "grid_position",          # only when USE_GRID_POSITION=True
+    "monaco_grid_penalty",    # grid_position^2 — exponential street circuit penalty
+    "avg_grid_position",
+    "avg_finish_last3",
+    "finish_trend",
+    "points_per_race",
+    "avg_lap_time_delta",     # Q3 quali delta for inference, race lap delta for training
+    "constructor_avg_finish",
+    "dnf_count",
+]
+
+def get_feature_cols() -> list:
+    # monaco_grid_penalty only meaningful when grid_position is included
+    excluded = []
+    if not USE_GRID_POSITION:
+        excluded += ["grid_position", "monaco_grid_penalty"]
+    return [f for f in _ALL_FEATURES if f not in excluded]
 
 
-def tune_lgbm_gridsearch(X: np.ndarray, y: np.ndarray) -> dict:
-    """GridSearchCV for LGBMClassifier."""
-    param_grid = {
-        "max_depth":     [3, 4, 5],
-        "n_estimators":  [50, 100, 150],
-        "learning_rate": [0.05, 0.1, 0.2],
-        "num_leaves":    [15, 31, 63],
-        "reg_lambda":    [1.0, 3.0, 5.0],
-        "subsample":     [0.7, 0.8, 1.0],
-    }
-    base = LGBMClassifier(random_state=RANDOM_SEED, verbose=-1)
-    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-    gs = GridSearchCV(base, param_grid, cv=cv, scoring=CV_SCORING, n_jobs=-1, verbose=0)
-    gs.fit(X, y)
-    return {"best_params": gs.best_params_, "best_score": gs.best_score_}
+# =============================================================================
+# SECTION 2 — LOAD SESSIONS
+# =============================================================================
+
+def load_sessions() -> list:
+    print(f"\n[1/6] Loading {len(TRAINING_RACES)} race sessions via FastF1...")
+    sessions = []
+    for year, race, stype in TRAINING_RACES:
+        print(f"  → {year} {race}...", end=" ", flush=True)
+        sess = fastf1.get_session(year, race, stype)
+        sess.load(laps=True, telemetry=False, weather=False, messages=False)
+        sessions.append(sess)
+        print(f"✓ {len(sess.results)} drivers")
+    print(f"  ✓ All sessions loaded")
+    return sessions
 
 
-def tune_rf_gridsearch(X: np.ndarray, y: np.ndarray) -> dict:
-    """GridSearchCV for RandomForestClassifier."""
-    param_grid = {
-        "n_estimators":  [50, 100, 200],
-        "max_depth":     [3, 4, 5, None],
-        "max_features":  ["sqrt", "log2"],
-        "min_samples_split": [2, 5, 10],
-    }
-    base = RandomForestClassifier(random_state=RANDOM_SEED)
-    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-    gs = GridSearchCV(base, param_grid, cv=cv, scoring=CV_SCORING, n_jobs=-1, verbose=0)
-    gs.fit(X, y)
-    return {"best_params": gs.best_params_, "best_score": gs.best_score_}
-
-
-def tune_xgb_optuna(X: np.ndarray, y: np.ndarray) -> dict:
-    """Optuna for XGBClassifier — same CV setup as GridSearch."""
-    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-
-    def objective(trial):
-        params = {
-            "max_depth":        trial.suggest_int("max_depth", 2, 5),
-            "n_estimators":     trial.suggest_int("n_estimators", 50, 200),
-            "learning_rate":    trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-            "subsample":        trial.suggest_float("subsample", 0.6, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-            "reg_lambda":       trial.suggest_float("reg_lambda", 1.0, 10.0),
-            "use_label_encoder": False,
-            "eval_metric":      "logloss",
-            "random_state":     RANDOM_SEED,
-        }
-        model = XGBClassifier(**params)
-        scores = []
-        for train_idx, val_idx in cv.split(X, y):
-            model.fit(X[train_idx], y[train_idx])
-            preds = model.predict(X[val_idx])
-            scores.append(f1_score(y[val_idx], preds, zero_division=0))
-        return np.mean(scores)
-
-    study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_SEED))
-    study.optimize(objective, n_trials=N_OPTUNA)
-    return {"best_params": study.best_params, "best_score": study.best_value}
-
-
-def tune_lgbm_optuna(X: np.ndarray, y: np.ndarray) -> dict:
-    """Optuna for LGBMClassifier."""
-    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-
-    def objective(trial):
-        params = {
-            "max_depth":     trial.suggest_int("max_depth", 3, 6),
-            "n_estimators":  trial.suggest_int("n_estimators", 50, 200),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-            "num_leaves":    trial.suggest_int("num_leaves", 15, 63),
-            "reg_lambda":    trial.suggest_float("reg_lambda", 0.5, 10.0),
-            "subsample":     trial.suggest_float("subsample", 0.6, 1.0),
-            "random_state":  RANDOM_SEED,
-            "verbose":       -1,
-        }
-        model = LGBMClassifier(**params)
-        scores = []
-        for train_idx, val_idx in cv.split(X, y):
-            model.fit(X[train_idx], y[train_idx])
-            preds = model.predict(X[val_idx])
-            scores.append(f1_score(y[val_idx], preds, zero_division=0))
-        return np.mean(scores)
-
-    study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_SEED))
-    study.optimize(objective, n_trials=N_OPTUNA)
-    return {"best_params": study.best_params, "best_score": study.best_value}
-
-
-def tune_rf_optuna(X: np.ndarray, y: np.ndarray) -> dict:
-    """Optuna for RandomForestClassifier."""
-    cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-
-    def objective(trial):
-        params = {
-            "n_estimators":      trial.suggest_int("n_estimators", 50, 200),
-            "max_depth":         trial.suggest_int("max_depth", 2, 8),
-            "max_features":      trial.suggest_categorical("max_features", ["sqrt", "log2"]),
-            "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
-            "random_state":      RANDOM_SEED,
-        }
-        model = RandomForestClassifier(**params)
-        scores = []
-        for train_idx, val_idx in cv.split(X, y):
-            model.fit(X[train_idx], y[train_idx])
-            preds = model.predict(X[val_idx])
-            scores.append(f1_score(y[val_idx], preds, zero_division=0))
-        return np.mean(scores)
-
-    study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_SEED))
-    study.optimize(objective, n_trials=N_OPTUNA)
-    return {"best_params": study.best_params, "best_score": study.best_value}
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# MONACO PREDICTION FEATURES (inference grid)
-# ──────────────────────────────────────────────────────────────────────────────
-
-def build_monaco_inference_df() -> pd.DataFrame:
+def load_monaco_quali_delta() -> dict:
     """
-    Build the Monaco prediction feature vector for each driver.
-    Uses estimated grid if QUALIFYING_DONE=False, actual grid if True.
+    Load Monaco qualifying lap time delta vs pole (Q3 → Q2 → Q1 fallback).
+    Q3 = max attack, empty tanks, true car pace — best signal for Monaco.
+    Returns dict: driver_code → delta in seconds vs pole time.
     """
-    rows = []
-    for driver in DRIVERS:
-        finishes    = RESULTS_2026[driver]
-        quali       = QUALI_2026[driver]
-        sprints     = SPRINT_2026[driver]
-        constructor = CONSTRUCTORS[driver]
+    print("\n[1b/6] Loading Monaco qualifying lap time deltas...")
+    quali_deltas = {}
+    try:
+        q_sess = fastf1.get_session(2026, ROUND_NUMBER, "Q")
+        q_sess.load(laps=True, telemetry=False, weather=False, messages=False)
 
-        grid_pos = (
-            MONACO_QUALIFYING_GRID[driver]
-            if QUALIFYING_DONE
-            else np.mean(quali)   # Pre-qualifying: use season avg
+        results = q_sess.results
+
+        # Find pole time — best Q3 time across all drivers
+        pole_time = None
+        for _, row in results.iterrows():
+            for q in ["Q3", "Q2", "Q1"]:
+                t = row.get(q)
+                if t is not None and pd.notna(t):
+                    t_sec = t.total_seconds() if hasattr(t, "total_seconds") else float(t)
+                    if pole_time is None or t_sec < pole_time:
+                        pole_time = t_sec
+                    break  # only use best available for pole calc
+
+        # Actually use Q3 minimum as pole
+        q3_times = []
+        for _, row in results.iterrows():
+            t = row.get("Q3")
+            if t is not None and pd.notna(t):
+                t_sec = t.total_seconds() if hasattr(t, "total_seconds") else float(t)
+                q3_times.append(t_sec)
+        if q3_times:
+            pole_time = min(q3_times)
+
+        if pole_time is None:
+            print("  ⚠️ Could not determine pole time — falling back to season avg")
+            return {}
+
+        # Delta per driver: Q3 → Q2 → Q1 fallback
+        for _, row in results.iterrows():
+            code = str(row.get("Abbreviation", "")).strip().upper()
+            if not code:
+                continue
+            drv_time = None
+            for q in ["Q3", "Q2", "Q1"]:
+                t = row.get(q)
+                if t is not None and pd.notna(t):
+                    drv_time = t.total_seconds() if hasattr(t, "total_seconds") else float(t)
+                    break
+            if drv_time is not None:
+                quali_deltas[code] = round(drv_time - pole_time, 3)
+
+        print(f"  ✓ Qualifying deltas loaded for {len(quali_deltas)} drivers")
+        print(f"  ✓ Pole time: {pole_time:.3f}s")
+
+    except Exception as exc:
+        print(f"  ⚠️ Qualifying load failed ({exc}) — falling back to season avg")
+
+    return quali_deltas
+
+
+# =============================================================================
+# SECTION 3 — COMPUTE PER-RACE FEATURES
+# =============================================================================
+
+def compute_race_features(sessions: list) -> pd.DataFrame:
+    print("\n[2/6] Computing per-race features from FastF1...")
+    all_rows = []
+
+    for sess_idx, sess in enumerate(sessions):
+        results   = sess.results
+        laps      = sess.laps
+        race_name = sess.event["EventName"]
+
+        # Winner avg lap time — baseline for race lap delta
+        winner_code    = results.sort_values("Position").iloc[0]["Abbreviation"]
+        winner_laps    = laps.pick_drivers(winner_code).pick_quicklaps()
+        winner_avg_lap = (
+            winner_laps["LapTime"].dropna()
+                        .apply(lambda t: t.total_seconds())
+                        .mean()
+            if not winner_laps.empty else None
         )
 
-        avg_grid         = np.mean(quali)
-        avg_finish_last3 = np.mean(finishes[-3:])
-        finish_trend     = compute_finish_trend(finishes)
-        ppr              = SEASON_POINTS[driver] / NUM_RACES
-        # avg_sprint: both Miami + Canada sprints available now
-        avg_sprint       = np.mean(sprints)
+        for _, driver in results.iterrows():
+            code       = str(driver["Abbreviation"]).strip().upper()
+            finish_pos = float(driver.get("Position",     20) or 20)
+            grid_pos   = float(driver.get("GridPosition", 11) or 11)
+            points     = float(driver.get("Points",        0) or  0)
+            team       = str(driver.get("TeamName", "Unknown"))
+            status     = str(driver.get("Status", ""))
 
-        rows.append({
-            "driver":                driver,
-            "grid_position":         round(grid_pos, 2),
-            "avg_grid_position":     round(avg_grid, 3),
-            "avg_finish_last3":      round(avg_finish_last3, 3),
-            "finish_trend":          finish_trend,
-            "points_per_race":       round(ppr, 3),
-            "avg_lap_time_delta":    AVG_LAP_TIME_DELTA[driver],
-            "constructor_avg_finish":round(CONSTRUCTOR_AVG_FINISH[constructor], 3),
-            "reliability_score":     RELIABILITY_SCORE[driver],
-            "avg_sprint_position":   round(avg_sprint, 3),
-        })
+            is_dnf = 1 if (
+                status not in ("Finished",)
+                and "Lap" not in status
+                and "+" not in status
+            ) else 0
+
+            # avg_lap_time_delta vs race winner
+            drv_laps   = laps.pick_drivers(code)
+            clean_laps = drv_laps.pick_quicklaps()
+            if not clean_laps.empty and winner_avg_lap:
+                drv_avg = (
+                    clean_laps["LapTime"].dropna()
+                               .apply(lambda t: t.total_seconds())
+                               .mean()
+                )
+                avg_lap_time_delta = drv_avg - winner_avg_lap
+            else:
+                avg_lap_time_delta = 2.0
+
+            all_rows.append({
+                "driver":             code,
+                "team":               team,
+                "race":               race_name,
+                "sess_idx":           sess_idx,
+                "finish_position":    finish_pos,
+                "grid_position":      grid_pos,
+                "points":             points,
+                "is_dnf":             is_dnf,
+                "avg_lap_time_delta": avg_lap_time_delta,
+                "podium":             1 if finish_pos <= 3 else 0,
+            })
+
+    df = pd.DataFrame(all_rows)
+    df = df.sort_values(["driver", "sess_idx"]).reset_index(drop=True)
+    print(f"  ✓ {len(df)} rows across {df['race'].nunique()} races")
+    return df
+
+
+# =============================================================================
+# SECTION 4 — ROLLING & SEASON FEATURES
+# =============================================================================
+
+def compute_trend(series: pd.Series) -> pd.Series:
+    vals   = series.values
+    trends = [0.0]
+    for i in range(1, len(vals)):
+        window = vals[max(0, i - 3):i + 1]
+        if len(window) >= 2:
+            slope = np.polyfit(np.arange(len(window)), window, 1)[0]
+            trends.append(float(slope))
+        else:
+            trends.append(0.0)
+    return pd.Series(trends, index=series.index)
+
+
+def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
+    print("\n[3/6] Adding rolling features...")
+    df = df.copy()
+
+    # avg_finish_last3
+    df["avg_finish_last3"] = (
+        df.groupby("driver")["finish_position"]
+          .transform(lambda x: x.rolling(3, min_periods=1).mean())
+    )
+
+    # finish_trend
+    df["finish_trend"] = (
+        df.groupby("driver")["finish_position"]
+          .transform(compute_trend)
+    )
+
+    # points_per_race
+    df["cumulative_points"] = df.groupby("driver")["points"].cumsum()
+    df["race_number"]       = df.groupby("driver").cumcount() + 1
+    df["points_per_race"]   = df["cumulative_points"] / df["race_number"]
+
+    # constructor_avg_finish — FIXED: rolling season average per constructor
+    df = df.sort_values(["team", "sess_idx"]).reset_index(drop=True)
+    df["constructor_avg_finish"] = (
+        df.groupby("team")["finish_position"]
+          .transform(lambda x: x.expanding().mean())
+    )
+    df = df.sort_values(["driver", "sess_idx"]).reset_index(drop=True)
+
+    # avg_grid_position — season expanding mean
+    df["avg_grid_position"] = (
+        df.groupby("driver")["grid_position"]
+          .transform(lambda x: x.expanding().mean())
+    )
+
+    # dnf_count — cumulative
+    df["dnf_count"] = (
+        df.groupby("driver")["is_dnf"]
+          .transform(lambda x: x.cumsum())
+    )
+
+    # monaco_grid_penalty — grid_position^2 for training rows
+    # Uses actual race grid position squared
+    df["monaco_grid_penalty"] = df["grid_position"] ** 2
+
+    print(f"  ✓ Podium distribution: {df['podium'].value_counts().to_dict()}")
+    print(f"  ✓ DNF distribution: {df['is_dnf'].value_counts().to_dict()}")
+    return df
+
+
+# =============================================================================
+# SECTION 5 — XGBRegressorClassifier WRAPPER
+# =============================================================================
+
+class XGBRegressorClassifier(ClassifierMixin, BaseEstimator):
+    """
+    Wraps XGBRegressor for use inside sklearn VotingClassifier.
+    Predicts finish position proxy, converts to podium probability.
+    """
+    _estimator_type = "classifier"
+
+    def __init__(self, n_estimators=100, max_depth=3,
+                 learning_rate=0.05, subsample=0.8,
+                 colsample_bytree=0.8, random_state=42):
+        self.n_estimators     = n_estimators
+        self.max_depth        = max_depth
+        self.learning_rate    = learning_rate
+        self.subsample        = subsample
+        self.colsample_bytree = colsample_bytree
+        self.random_state     = random_state
+        self.classes_         = np.array([0, 1])
+
+    def fit(self, X, y):
+        y_reg = np.where(y == 1, 2.0, 12.0)
+        self._model = XGBRegressor(
+            n_estimators=self.n_estimators,
+            max_depth=self.max_depth,
+            learning_rate=self.learning_rate,
+            subsample=self.subsample,
+            colsample_bytree=self.colsample_bytree,
+            verbosity=0,
+            random_state=self.random_state,
+        )
+        self._model.fit(X, y_reg)
+        return self
+
+    def predict_proba(self, X):
+        pred_pos    = self._model.predict(X)
+        prob_podium = np.clip(1.0 - (pred_pos / 22.0), 0.0, 1.0)
+        return np.column_stack([1.0 - prob_podium, prob_podium])
+
+    def predict(self, X):
+        return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
+
+
+# =============================================================================
+# SECTION 6 — OPTUNA TUNING
+# =============================================================================
+
+def tune_optuna(X: np.ndarray, y: np.ndarray) -> tuple:
+    """Optuna for all 3 models. Returns (xgb_clf, xgb_reg, lgbm_clf, op_scores)."""
+    n_neg = (y == 0).sum()
+    n_pos = (y == 1).sum()
+    spw   = n_neg / n_pos if n_pos > 0 else 1.0
+    cv    = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
+
+    def _cv_score(model):
+        scores = []
+        for tr, val in cv.split(X, y):
+            model.fit(X[tr], y[tr])
+            scores.append(f1_score(y[val], model.predict(X[val]), zero_division=0))
+        return float(np.mean(scores))
+
+    print("\n  Optuna — XGBClassifier...")
+    def xgb_obj(trial):
+        m = XGBClassifier(
+            n_estimators=    trial.suggest_int("n_estimators", 50, 200),
+            max_depth=       trial.suggest_int("max_depth", 2, 3),      # capped at 3
+            learning_rate=   trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            subsample=       trial.suggest_float("subsample", 0.6, 1.0),
+            colsample_bytree=trial.suggest_float("colsample_bytree", 0.7, 0.9),  # floor 0.7
+            reg_lambda=      trial.suggest_float("reg_lambda", 3.0, 10.0),
+            scale_pos_weight=spw,
+            use_label_encoder=False, eval_metric="logloss",
+            verbosity=0, random_state=RANDOM_SEED,
+        )
+        return _cv_score(m)
+    xgb_study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_SEED))
+    xgb_study.optimize(xgb_obj, n_trials=N_OPTUNA)
+    best_xgb_op = XGBClassifier(
+        **xgb_study.best_params,
+        scale_pos_weight=spw,
+        use_label_encoder=False, eval_metric="logloss",
+        verbosity=0, random_state=RANDOM_SEED,
+    )
+    best_xgb_op.fit(X, y)
+    print(f"    Best CV f1={xgb_study.best_value:.4f}")
+
+    print("  Optuna — XGBRegressorClassifier...")
+    def reg_obj(trial):
+        m = XGBRegressorClassifier(
+            n_estimators= trial.suggest_int("n_estimators", 50, 200),
+            max_depth=    trial.suggest_int("max_depth", 2, 3),         # capped at 3
+            learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            subsample=    trial.suggest_float("subsample", 0.6, 1.0),
+            colsample_bytree=trial.suggest_float("colsample_bytree", 0.7, 1.0),  # floor 0.7
+            random_state= RANDOM_SEED,
+        )
+        return _cv_score(m)
+    reg_study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_SEED))
+    reg_study.optimize(reg_obj, n_trials=N_OPTUNA)
+    best_reg_op = XGBRegressorClassifier(**reg_study.best_params, random_state=RANDOM_SEED)
+    best_reg_op.fit(X, y)
+    print(f"    Best CV f1={reg_study.best_value:.4f}")
+
+    print("  Optuna — LGBMClassifier...")
+    def lgbm_obj(trial):
+        m = LGBMClassifier(
+            n_estimators= trial.suggest_int("n_estimators", 50, 200),
+            max_depth=    trial.suggest_int("max_depth", 2, 3),         # capped at 3
+            learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            num_leaves=   trial.suggest_int("num_leaves", 7, 31),       # lower = shallower
+            subsample=    trial.suggest_float("subsample", 0.6, 1.0),
+            reg_lambda=   trial.suggest_float("reg_lambda", 0.5, 10.0),
+            class_weight="balanced", random_state=RANDOM_SEED, verbose=-1,
+        )
+        return _cv_score(m)
+    lgbm_study = optuna.create_study(direction="maximize", sampler=TPESampler(seed=RANDOM_SEED))
+    lgbm_study.optimize(lgbm_obj, n_trials=N_OPTUNA)
+    best_lgbm_op = LGBMClassifier(
+        **lgbm_study.best_params,
+        class_weight="balanced", random_state=RANDOM_SEED, verbose=-1,
+    )
+    best_lgbm_op.fit(X, y)
+    print(f"    Best CV f1={lgbm_study.best_value:.4f}")
+
+    op_scores = {
+        "XGBClassifier":          round(xgb_study.best_value, 4),
+        "XGBRegressorClassifier": round(reg_study.best_value, 4),
+        "LGBMClassifier":         round(lgbm_study.best_value, 4),
+    }
+
+    return best_xgb_op, best_reg_op, best_lgbm_op, op_scores
+
+
+# =============================================================================
+# SECTION 7 — BUILD MONACO INFERENCE ROWS
+# =============================================================================
+
+def build_monaco_rows(df: pd.DataFrame, sessions: list, quali_deltas: dict) -> pd.DataFrame:
+    """
+    One row per driver using full 2026 history.
+    avg_lap_time_delta = Monaco Q3 delta if available, else season avg.
+    monaco_grid_penalty = grid_position^2.
+    """
+    last_results = sessions[-1].results
+    feature_cols = get_feature_cols()
+    rows = []
+
+    for _, driver in last_results.iterrows():
+        code = str(driver["Abbreviation"]).strip().upper()
+        team = str(driver.get("TeamName", "Unknown"))
+
+        drv_history = df[df["driver"] == code].sort_values("sess_idx")
+
+        if drv_history.empty:
+            row = {feat: 0.0 for feat in feature_cols}
+            row.update({"driver": code, "team": team})
+            rows.append(row)
+            continue
+
+        last = drv_history.iloc[-1]
+
+        # grid_position for Monaco
+        if USE_GRID_POSITION and QUALIFYING_DONE:
+            grid_pos = float(MONACO_QUALIFYING_GRID.get(code, last["avg_grid_position"]))
+        else:
+            grid_pos = float(last["avg_grid_position"])
+
+        # avg_lap_time_delta — Q3 Monaco specific, fallback to season avg
+        lap_delta = quali_deltas.get(
+            code,
+            float(drv_history["avg_lap_time_delta"].mean())
+        )
+
+        row = {
+            "driver":                 code,
+            "team":                   team,
+            "grid_position":          grid_pos,
+            "monaco_grid_penalty":    grid_pos ** 2,
+            "avg_grid_position":      float(last["avg_grid_position"]),
+            "avg_finish_last3":       float(last["avg_finish_last3"]),
+            "finish_trend":           float(last["finish_trend"]),
+            "points_per_race":        float(last["points_per_race"]),
+            "avg_lap_time_delta":     lap_delta,
+            "constructor_avg_finish": float(last["constructor_avg_finish"]),
+            "dnf_count":              float(last["dnf_count"]),
+        }
+        rows.append(row)
 
     return pd.DataFrame(rows)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# FEATURE IMPORTANCE (from XGBClassifier — primary model)
-# ──────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# SECTION 8 — PREDICT & RANK
+# =============================================================================
 
-def get_feature_importance(model: VotingClassifier) -> dict:
-    """Extract XGB feature importance from the voting ensemble."""
-    xgb_model = None
-    for name, est in model.named_estimators_.items():
-        if "xgb" in name.lower():
-            xgb_model = est
-            break
-    if xgb_model is None:
-        return {}
-    importances = xgb_model.feature_importances_
-    total = importances.sum()
-    return {
-        feat: round(float(imp / total) * 100, 1)
-        for feat, imp in zip(FEATURES, importances)
-    }
+def predict_monaco(voting_clf, best_xgb_cls, monaco_df: pd.DataFrame,
+                   X_train: np.ndarray, y_train: np.ndarray) -> tuple:
+    feature_cols = get_feature_cols()
+    X_monaco     = monaco_df[feature_cols].fillna(0).values
+
+    # Calibrate the voting ensemble to fix overconfidence
+    print("  Calibrating ensemble (sigmoid, prefit)...")
+    calibrated = CalibratedClassifierCV(estimator=voting_clf, method="sigmoid", cv=None)
+    calibrated.fit(X_train, y_train)
+
+    probs                     = calibrated.predict_proba(X_monaco)[:, 1]
+    monaco_df                 = monaco_df.copy()
+    monaco_df["podium_prob"]  = probs
+    monaco_df                 = monaco_df.sort_values("podium_prob", ascending=False).reset_index(drop=True)
+    monaco_df["predicted_pos"] = monaco_df.index + 1
+
+    # Feature importances from raw XGBClassifier (before calibration)
+    importances = {}
+    if hasattr(best_xgb_cls, "feature_importances_"):
+        total = best_xgb_cls.feature_importances_.sum()
+        for feat, imp in zip(feature_cols, best_xgb_cls.feature_importances_):
+            importances[feat] = round(float(imp / total) * 100, 1)
+
+    full_grid = [
+        {
+            "position":    int(row["predicted_pos"]),
+            "driver":      row["driver"],
+            "team":        row["team"],
+            "podiumProb":  round(float(row["podium_prob"]) * 100, 1),
+            "gridPosition": int(MONACO_QUALIFYING_GRID.get(row["driver"], 0)) if QUALIFYING_DONE else None,
+        }
+        for _, row in monaco_df.iterrows()
+    ]
+
+    return full_grid, importances
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# MAIN
-# ──────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# SECTION 9 — SAVE JSON
+# =============================================================================
 
-def main():
-    print("=" * 65)
-    print(f"  DHIR'S PIT WALL — {RACE_NAME.upper()} 2026")
-    print(f"  Round {ROUND_NUMBER} · {CIRCUIT} · {RACE_DATE}")
-    print("=" * 65)
+def save_json(full_grid, importances, feature_cols, tuning_summary, quali_used: bool) -> None:
+    podium   = full_grid[:3]
+    status   = "Final Prediction" if QUALIFYING_DONE else "Pre-Qualifying Forecast"
+    grid_imp = importances.get("grid_position", 0)
+    pen_imp  = importances.get("monaco_grid_penalty", 0)
 
-    # 1. Build training data
-    print("\n[1/5] Building training dataset...")
-    df = build_training_rows()
-    X  = df[FEATURES].values
-    y  = df["podium"].values
-    print(f"      Rows: {len(df)} | Podium positives: {y.sum()} | Features: {len(FEATURES)}")
-
-    # 2. Tune each model with BOTH GridSearchCV and Optuna
-    print("\n[2/5] Hyperparameter tuning — GridSearchCV vs Optuna")
-    print("      (same 5-fold CV, f1 scoring, identical data)")
-
-    print("      › XGBoost GridSearchCV...", end=" ", flush=True)
-    xgb_gs = tune_xgb_gridsearch(X, y)
-    print(f"CV f1={xgb_gs['best_score']:.4f}")
-
-    print("      › XGBoost Optuna...", end=" ", flush=True)
-    xgb_op = tune_xgb_optuna(X, y)
-    print(f"CV f1={xgb_op['best_score']:.4f}")
-
-    print("      › LGBM GridSearchCV...", end=" ", flush=True)
-    lgbm_gs = tune_lgbm_gridsearch(X, y)
-    print(f"CV f1={lgbm_gs['best_score']:.4f}")
-
-    print("      › LGBM Optuna...", end=" ", flush=True)
-    lgbm_op = tune_lgbm_optuna(X, y)
-    print(f"CV f1={lgbm_op['best_score']:.4f}")
-
-    print("      › RandomForest GridSearchCV...", end=" ", flush=True)
-    rf_gs = tune_rf_gridsearch(X, y)
-    print(f"CV f1={rf_gs['best_score']:.4f}")
-
-    print("      › RandomForest Optuna...", end=" ", flush=True)
-    rf_op = tune_rf_optuna(X, y)
-    print(f"CV f1={rf_op['best_score']:.4f}")
-
-    # Winner selection per model (pick higher CV score)
-    def pick_winner(gs_result, op_result, model_name):
-        if gs_result["best_score"] >= op_result["best_score"]:
-            print(f"      ✓ {model_name}: GridSearch wins "
-                  f"({gs_result['best_score']:.4f} vs {op_result['best_score']:.4f})")
-            return gs_result["best_params"], "GridSearchCV"
-        else:
-            print(f"      ✓ {model_name}: Optuna wins "
-                  f"({op_result['best_score']:.4f} vs {gs_result['best_score']:.4f})")
-            return op_result["best_params"], "Optuna"
-
-    xgb_params, xgb_method  = pick_winner(xgb_gs,  xgb_op,  "XGBoost")
-    lgbm_params, lgbm_method = pick_winner(lgbm_gs, lgbm_op, "LGBM")
-    rf_params, rf_method     = pick_winner(rf_gs,   rf_op,   "RandomForest")
-
-    tuning_summary = {
-        "XGBoost":      {"method": xgb_method,  "gridsearch_f1": round(xgb_gs["best_score"], 4),  "optuna_f1": round(xgb_op["best_score"], 4),  "winner_params": xgb_params},
-        "LGBM":         {"method": lgbm_method, "gridsearch_f1": round(lgbm_gs["best_score"], 4), "optuna_f1": round(lgbm_op["best_score"], 4), "winner_params": lgbm_params},
-        "RandomForest": {"method": rf_method,   "gridsearch_f1": round(rf_gs["best_score"], 4),   "optuna_f1": round(rf_op["best_score"], 4),   "winner_params": rf_params},
-    }
-
-    # 3. Train final models on full dataset with winning params
-    print("\n[3/5] Training ensemble on full dataset...")
-
-    # Enforce grid_position regularisation on XGB regardless of tuning pick
-    # to keep importance 35-45% — override if tuner went too lenient
-    xgb_params.setdefault("reg_lambda", 5.0)
-    xgb_params.setdefault("colsample_bytree", 0.7)
-    xgb_params["use_label_encoder"] = False
-    xgb_params["eval_metric"]       = "logloss"
-    xgb_params["random_state"]      = RANDOM_SEED
-
-    lgbm_params["random_state"] = RANDOM_SEED
-    lgbm_params["verbose"]      = -1
-
-    rf_params["random_state"] = RANDOM_SEED
-
-    xgb_clf  = XGBClassifier(**xgb_params)
-    lgbm_clf = LGBMClassifier(**lgbm_params)
-    rf_clf   = RandomForestClassifier(**rf_params)
-
-    ensemble = VotingClassifier(
-        estimators=[("xgb", xgb_clf), ("lgbm", lgbm_clf), ("rf", rf_clf)],
-        voting="soft",
-        weights=[2, 1, 1],   # XGB primary — slightly upweighted
-    )
-    ensemble.fit(X, y)
-    print("      Ensemble trained: XGBClassifier + LGBMClassifier + RandomForestClassifier")
-
-    # 4. Predict Monaco
-    print(f"\n[4/5] Predicting Monaco {'(POST-QUALIFYING)' if QUALIFYING_DONE else '(PRE-QUALIFYING — estimated grid)'}...")
-    monaco_df  = build_monaco_inference_df()
-    X_monaco   = monaco_df[FEATURES].values
-    proba      = ensemble.predict_proba(X_monaco)[:, 1]
-    monaco_df["podium_prob"] = proba
-    monaco_df = monaco_df.sort_values("podium_prob", ascending=False).reset_index(drop=True)
-
-    # Rank → confidence
-    print("\n      ┌─────────────────────────────────────────────────────┐")
-    print("      │  MONACO 2026 PODIUM PROBABILITIES                   │")
-    print("      ├──────┬────────┬──────────────┬───────────────────────┤")
-    print("      │  POS │ DRIVER │  CONFIDENCE  │ CONSTRUCTOR           │")
-    print("      ├──────┼────────┼──────────────┼───────────────────────┤")
-    for i, row in monaco_df.iterrows():
-        medal = ["P1 🏆", "P2 🥈", "P3 🥉"][i] if i < 3 else f"P{i+1}   "
-        print(f"      │ {medal} │  {row['driver']}  │  {row['podium_prob']*100:5.1f}%       │ {CONSTRUCTORS[row['driver']]:<20}  │")
-        if i >= 7:
-            print("      └──────┴────────┴──────────────┴───────────────────────┘")
-            break
-
-    # Feature importance check
-    feat_imp = get_feature_importance(ensemble)
-    grid_imp = feat_imp.get("grid_position", 0)
-    print(f"\n      grid_position importance: {grid_imp:.1f}% "
-          f"{'✅ OK (target 35-45%)' if 35 <= grid_imp <= 50 else '⚠️ Check regularisation'}")
-    print("      Feature importances (XGB):")
-    for feat, imp in sorted(feat_imp.items(), key=lambda x: -x[1]):
-        bar = "█" * int(imp / 2)
-        print(f"        {feat:<25} {bar:<25} {imp:.1f}%")
-
-    # 5. Build JSON output
-    print(f"\n[5/5] Writing JSON → {OUTPUT_PATH}")
-
-    top3 = monaco_df.head(3)
-
-    prediction_data = {
-        "round":          ROUND_NUMBER,
-        "race":           RACE_NAME,
-        "circuit":        CIRCUIT,
-        "date":           RACE_DATE,
-        "season":         2026,
+    output = {
+        "slug":     "monaco-grand-prix",
+        "raceName": RACE_NAME,
+        "round":    ROUND_NUMBER,
+        "circuit":  CIRCUIT,
+        "date":     RACE_DATE,
+        "status":   status,
         "qualifyingDone": QUALIFYING_DONE,
-        "modelVersion":   "v3.0-monaco-voting",
-        "trainingRaces":  ["Australia", "China", "Japan", "Miami", "Canada"],
-        "trainingRows":   int(len(df)),
 
-        "prediction": {
-            "P1": {
-                "driver":      top3.iloc[0]["driver"],
-                "constructor": CONSTRUCTORS[top3.iloc[0]["driver"]],
-                "confidence":  round(float(top3.iloc[0]["podium_prob"]) * 100, 1),
-            },
-            "P2": {
-                "driver":      top3.iloc[1]["driver"],
-                "constructor": CONSTRUCTORS[top3.iloc[1]["driver"]],
-                "confidence":  round(float(top3.iloc[1]["podium_prob"]) * 100, 1),
-            },
-            "P3": {
-                "driver":      top3.iloc[2]["driver"],
-                "constructor": CONSTRUCTORS[top3.iloc[2]["driver"]],
-                "confidence":  round(float(top3.iloc[2]["podium_prob"]) * 100, 1),
-            },
+        "modelUsed": "CalibratedClassifierCV → VotingClassifier (XGBClassifier · XGBRegressorClassifier · LGBMClassifier)",
+
+        "predictedPodium": [
+            {
+                "pos":        p["position"],
+                "driver":     p["driver"],
+                "team":       p["team"],
+                "confidence": p["podiumProb"],
+            }
+            for p in podium
+        ],
+        "fullGrid": full_grid,
+
+        "features":           feature_cols,
+        "featureImportances": importances,
+
+        "modelMetrics": {
+            "cvFolds":     CV_FOLDS,
+            "cvScoring":   CV_SCORING,
+            "calibration": "CalibratedClassifierCV sigmoid cv=None",
+            "tuning":      tuning_summary,
         },
 
-        "fullProbabilities": [
-            {
-                "driver":      row["driver"],
-                "constructor": CONSTRUCTORS[row["driver"]],
-                "podiumProb":  round(float(row["podium_prob"]) * 100, 1),
-                "gridPosition": int(MONACO_QUALIFYING_GRID[row["driver"]]) if QUALIFYING_DONE else None,
-            }
-            for _, row in monaco_df.iterrows()
-        ],
+        "trainingData": {
+            "races":    ["Australia", "China", "Japan", "Miami", "Canada"],
+            "rows":     TOTAL_RACES * 22,
+            "cvMethod": "Optuna · 5-fold · f1",
+        },
 
         "actualResult": {
             "P1": None,
@@ -697,49 +628,120 @@ def main():
             "P3": None,
         },
 
-        "modelMetrics": {
-            "ensemble": "SoftVotingClassifier",
-            "estimators": ["XGBClassifier", "LGBMClassifier", "RandomForestClassifier"],
-            "weights": [2, 1, 1],
-            "cvFolds": CV_FOLDS,
-            "cvScoring": CV_SCORING,
-            "hyperparameterTuning": tuning_summary,
-        },
-
-        "featureImportance": feat_imp,
-
         "pitWallNotes": [
             "Monaco 2026: Active aero disabled by FIA — mechanical grip only.",
-            "Boost Button remains the PRIMARY overtake mechanism: Portier → Nouvelle Chicane.",
-            "Electric power capped at 200km/h — tunnel insanity prevented.",
-            "Cars 10cm narrower in 2026 regs — breathing room exists but passing still near-impossible.",
-            "reliability_score weighted heavily: wall-contact + Boost Button aggression = high DNF risk.",
-            "constructor_avg_finish captures energy deployment advantage under 2026 regulations.",
-            "Russell DNF (Canada power unit) flagged in reliability_score — watch for Monaco setup compromise.",
-            "Antonelli 4x consecutive wins — psychological pressure factor not modelled.",
-            f"Grid dominance fix applied: XGB reg_lambda=5.0, colsample_bytree=0.7. "
-            f"grid_position importance: {grid_imp:.1f}% (target 35-45%).",
-            f"Tuning method winners — XGB: {tuning_summary['XGBoost']['method']}, "
-            f"LGBM: {tuning_summary['LGBM']['method']}, "
-            f"RF: {tuning_summary['RandomForest']['method']}.",
+            "Boost Button is the primary overtake mechanism: Portier → Nouvelle Chicane.",
+            "Electric power capped at 200km/h through the tunnel.",
+            "Cars 10cm narrower in 2026 regs — slightly more room but overtaking still rare.",
+            "dnf_count critical — Monaco walls + Boost Button aggression = high DNF risk.",
+            "Leclerc hit the wall on his final Q3 lap — car damage risk for Sunday.",
+            f"avg_lap_time_delta source: {'Monaco Q3 qualifying ✓' if quali_used else 'season average (Q3 unavailable)'}.",
+            f"monaco_grid_penalty (grid^2) importance: {pen_imp:.1f}% — exponential street circuit dropoff.",
+            f"grid_position importance: {grid_imp:.1f}%  |  combined grid signal: {grid_imp + pen_imp:.1f}%.",
+            f"Calibration applied: sigmoid cv=None — probabilities smoothed from raw tree overconfidence.",
+            f"Tuning: Optuna · XGB={tuning_summary['XGBClassifier']['optuna_f1']:.4f}, "
+            f"XGBReg={tuning_summary['XGBRegressorClassifier']['optuna_f1']:.4f}, "
+            f"LGBM={tuning_summary['LGBMClassifier']['optuna_f1']:.4f}.",
+        ],
+
+        "limitations": [
+            "110 training rows — midfield probabilities will compress toward similar values.",
+            "dnf_count from 5 races only — small sample.",
+            "FastF1 data for 2026 may be incomplete for newer teams (Cadillac, RB).",
         ],
     }
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PATH, "w") as f:
-        json.dump(prediction_data, f, indent=2, default=str)
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with OUTPUT_FILE.open("w", encoding="utf-8") as f:
+        json.dump(output, f, indent=2)
+    print(f"\n  ✓ Saved → {OUTPUT_FILE}")
 
-    print(f"\n  ✅ monaco-2026.json written successfully.")
-    print(f"\n{'=' * 65}")
-    print(f"  PODIUM PREDICTION — {'FINAL' if QUALIFYING_DONE else 'PRE-QUALIFYING'}")
-    print(f"{'=' * 65}")
-    for pos, key in enumerate(["P1", "P2", "P3"], 1):
-        p = prediction_data["prediction"][key]
-        medal = "🏆" if pos == 1 else "🥈" if pos == 2 else "🥉"
-        print(f"  P{pos} {medal}  {p['driver']}  {p['constructor']:<12}  {p['confidence']:.1f}%")
-    print(f"{'=' * 65}")
-    print(f"\n  Next step: {'Run /clear-cache on FastAPI after updating actualResult.' if QUALIFYING_DONE else 'Set QUALIFYING_DONE=True Saturday after qualifying.'}")
-    print()
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+def main():
+    feature_cols = get_feature_cols()
+    print("=" * 65)
+    print(f"  DHIR'S PIT WALL — {RACE_NAME.upper()} 2026")
+    print(f"  Round {ROUND_NUMBER} · {CIRCUIT} · {RACE_DATE}")
+    print(f"  Features: {len(feature_cols)} | USE_GRID_POSITION={USE_GRID_POSITION}")
+    print("=" * 65)
+
+    # 1. Load race sessions + Monaco qualifying deltas
+    sessions     = load_sessions()
+    quali_deltas = load_monaco_quali_delta()
+    quali_used   = len(quali_deltas) > 0
+
+    # 2. Per-race features from FastF1
+    race_df = compute_race_features(sessions)
+
+    # 3. Rolling features
+    race_df = add_rolling_features(race_df)
+
+    # 4. Tune
+    print(f"\n[4/6] Tuning — Optuna ({CV_FOLDS}-fold, {CV_SCORING})")
+    X_train = race_df[feature_cols].fillna(0).values
+    y_train = race_df["podium"].values
+
+    print("\n── Optuna ──────────────────────────────────────────────────────")
+    best_xgb, best_reg, best_lgbm, op_scores = tune_optuna(X_train, y_train)
+
+    tuning_summary = {
+        "XGBClassifier":          {"optuna_f1": op_scores["XGBClassifier"]},
+        "XGBRegressorClassifier": {"optuna_f1": op_scores["XGBRegressorClassifier"]},
+        "LGBMClassifier":         {"optuna_f1": op_scores["LGBMClassifier"]},
+    }
+
+    # 5. Build ensemble
+    print("\n[5/6] Building VotingClassifier (soft) + Calibration...")
+    voting_clf = VotingClassifier(
+        estimators=[("xgb", best_xgb), ("xgb_reg", best_reg), ("lgbm", best_lgbm)],
+        voting="soft",
+    )
+    voting_clf.fit(X_train, y_train)
+    print("  ✓ Ensemble: XGBClassifier + XGBRegressorClassifier + LGBMClassifier")
+
+    # 6. Predict with calibration
+    print(f"\n[6/6] Predicting Monaco ({'POST-QUALIFYING' if QUALIFYING_DONE else 'PRE-QUALIFYING'})...")
+    monaco_df = build_monaco_rows(race_df, sessions, quali_deltas)
+    full_grid, importances = predict_monaco(voting_clf, best_xgb, monaco_df, X_train, y_train)
+
+    # Print results
+    print("\n" + "=" * 65)
+    print(f"  🏁  MONACO GP 2026 — {'FINAL' if QUALIFYING_DONE else 'PRE-QUALIFYING'}")
+    print("=" * 65)
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    for entry in full_grid[:3]:
+        print(f"  {medals[entry['position']]}  P{entry['position']}  {entry['driver']:<6}  {entry['team']:<25}  {entry['podiumProb']}%")
+
+    print(f"\n  avg_lap_time_delta source: {'Monaco Q3 qualifying ✓' if quali_used else 'season avg (Q3 unavailable)'}")
+    print("\n  Feature importances (XGBClassifier):")
+    for feat, imp in sorted(importances.items(), key=lambda x: -x[1]):
+        bar = "█" * int(imp / 2)
+        print(f"    {feat:<25} {bar:<25} {imp:.1f}%")
+
+    grid_imp = importances.get("grid_position", 0)
+    pen_imp  = importances.get("monaco_grid_penalty", 0)
+    print(f"\n  Combined grid signal: {grid_imp + pen_imp:.1f}%")
+
+    print("\n  Full top 10:")
+    print(f"  {'POS':<5} {'DRV':<6} {'TEAM':<25} {'PROB'}")
+    print("  " + "─" * 48)
+    for entry in full_grid[:10]:
+        print(f"  P{entry['position']:<4} {entry['driver']:<6} {entry['team']:<25} {entry['podiumProb']:>5.1f}%")
+
+    save_json(full_grid, importances, feature_cols, tuning_summary, quali_used)
+
+    print("\n  NEXT STEPS:")
+    if not QUALIFYING_DONE:
+        print("  1. Saturday — set QUALIFYING_DONE=True, USE_GRID_POSITION=True")
+        print("  2. Rerun: python backend/scripts/monaco_prediction.py")
+    else:
+        print("  1. After Sunday race → fill actualResult in monaco-2026.json")
+        print("  2. Hit /clear-cache to refresh dashboard")
+    print("=" * 65)
 
 
 if __name__ == "__main__":
