@@ -2,12 +2,12 @@ import React from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Checker } from "@/components/Checker";
 import { PageShell } from "@/components/PageShell";
-import { type Driver, type Race, type RacePrediction, driverByCode, useSiteData } from "@/lib/data";
+import { PREDICTION_BADGE, type Driver, type Race, type RacePrediction, driverByCode, useSiteData } from "@/lib/data";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
-      { title: "Race Archive - Dhir's Pit Wall" },
+      { title: "Race Archive - Pit Wall" },
       { name: "description", content: "Archive of completed 2026 races and the season path." },
     ],
   }),
@@ -126,10 +126,10 @@ function RaceSection({
   const winner = race.winner ? driverByCode(race.winner, drivers) : null;
   const podiumDrivers = race.podium?.map((code) => driverByCode(code, drivers)) ?? [];
   const heroBackground = winner
-    ? `linear-gradient(135deg, color-mix(in srgb, ${winner.color} 24%, black), black 78%)`
-    : "linear-gradient(135deg, rgba(0,0,0,0.85), rgba(0,0,0,1))";
-  const showWinnerImage = Boolean(race.winnerImage && !winnerImageError);
-  const showHeadshot = Boolean(!showWinnerImage && winner?.headshot && !headshotError);
+    ? `linear-gradient(135deg, color-mix(in srgb, ${winner.color} 36%, black), color-mix(in srgb, ${winner.color} 12%, black) 44%, black 90%)`
+    : "linear-gradient(135deg, rgba(0,0,0,0.82), rgba(0,0,0,0.96))";
+  const showWinnerImage = false;
+  const showHeadshot = false;
 
   return (
     <section className="px-4 md:px-8 py-10">
@@ -150,9 +150,9 @@ function RaceSection({
               src={race.winnerImage}
               alt={`${race.name} winner`}
               onError={() => setWinnerImageError(true)}
-              className="absolute inset-0 h-full w-full object-cover opacity-50 mix-blend-luminosity"
+              className="absolute inset-0 h-full w-full object-cover opacity-34"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/70" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/72 via-black/36 to-black/56" />
           </>
         )}
 
@@ -161,7 +161,7 @@ function RaceSection({
             src={winner.headshot}
             alt={winner.name}
             onError={() => setHeadshotError(true)}
-            className="absolute right-0 bottom-0 h-full max-w-[48%] object-contain object-right-bottom opacity-35 grayscale"
+            className="absolute right-0 bottom-0 h-full max-w-[48%] object-contain object-right-bottom opacity-78 drop-shadow-2xl"
           />
         )}
 
@@ -224,13 +224,31 @@ function RaceSection({
                 <div key={`${race.round}-${driver.code}`} className="border-b border-white/10 pb-4 last:border-b-0 last:pb-0">
                   <div className="font-mono text-[10px] tracking-widest uppercase text-white/45">P{index + 1}</div>
                   <div className="mt-1 flex items-end justify-between gap-3">
-                    <div>
-                      <div className="font-poster text-3xl tracking-wider" style={{ color: driver.color }}>
-                        {driver.code}
-                      </div>
-                      <div className="font-display font-bold uppercase text-xs mt-1">{driver.name}</div>
-                      <div className="font-mono text-[10px] tracking-widest uppercase text-white/45 mt-1">
-                        {driver.team}
+                    <div className="flex items-center gap-3">
+                      {driver.headshot ? (
+                        <img
+                          src={driver.headshot}
+                          alt={driver.name}
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                          className="h-14 w-14 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="h-14 w-14 rounded-full flex items-center justify-center font-bold text-sm"
+                          style={{ backgroundColor: driver.color }}
+                        >
+                          {driver.code}
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="font-poster text-3xl tracking-wider" style={{ color: driver.color }}>
+                          {driver.code}
+                        </div>
+                        <div className="font-display font-bold uppercase text-xs mt-1">{driver.name}</div>
+                        <div className="font-mono text-[10px] tracking-widest uppercase text-white/45 mt-1">
+                          {driver.team}
+                        </div>
                       </div>
                     </div>
                     {driver.number && <div className="font-mono text-sm text-white/45">#{driver.number}</div>}
@@ -267,7 +285,7 @@ function RaceSection({
         <MetaBlock label="Laps" value={String(race.laps)} />
         <MetaBlock label="Length" value={`${race.lengthKm.toFixed(3)} km`} />
         <MetaBlock label="Winner" value={winner?.code ?? "--"} />
-        <MetaBlock label="Forecast" value={prediction?.status ?? "No page"} />
+        <MetaBlock label="Forecast" value={prediction ? PREDICTION_BADGE : "No page"} />
       </div>
     </section>
   );

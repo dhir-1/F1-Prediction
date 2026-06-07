@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import site_data
 from pathlib import Path
 
-app = FastAPI(title="Dhir's Pit Wall API", version="1.0.0")
+app = FastAPI(title="Pit Wall API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

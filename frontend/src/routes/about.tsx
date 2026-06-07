@@ -6,7 +6,7 @@ import { useSiteData } from "@/lib/data";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About the Model - Dhir's Pit Wall" },
+      { title: "About the Model - Pit Wall" },
       {
         name: "description",
         content: "How the F1 2026 prediction model works: features, training, and evaluation.",
@@ -54,7 +54,7 @@ function AboutPage() {
         <div className="space-y-4 text-sm leading-relaxed">
           <div className="text-tag">The Approach</div>
           <p>
-            Dhir&apos;s Pit Wall uses FastF1 race data from earlier rounds to build a
+            Pit Wall uses FastF1 race data from earlier rounds to build a
             driver-by-driver training table for the 2026 season. Each row is engineered from
             information that should be knowable before lights out, then scored by a shortlist of
             models including XGBoost and Random Forest.

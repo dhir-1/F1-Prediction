@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { Checker } from "@/components/Checker";
 import { PageShell } from "@/components/PageShell";
-import { driverByCode, getPredictionBySlug, useSiteData } from "@/lib/data";
+import { PREDICTION_BADGE, driverByCode, getPredictionBySlug, useSiteData } from "@/lib/data";
 
 export const Route = createFileRoute("/predictions/$slug")({
   loader: ({ params }) => {
@@ -26,7 +26,6 @@ function PredictionDetailPage() {
     features,
     metrics,
     modelUsed,
-    status,
     trainingData,
     limitations,
     qualifyingDone,
@@ -60,7 +59,7 @@ function PredictionDetailPage() {
           <span className="block italic text-[var(--redorange)]">PREDICTED.</span>
         </h1>
         <div className="mt-4 inline-block bg-[var(--redorange)] text-white px-4 py-1.5 font-display font-bold tracking-[0.2em] uppercase text-xs">
-          {status}
+          {PREDICTION_BADGE}
         </div>
         <div className="mt-4 font-mono text-[10px] opacity-70 tracking-widest uppercase">
           {race?.circuit} . {race?.laps} Laps . {race?.lengthKm.toFixed(3)} km
@@ -81,20 +80,15 @@ function PredictionDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
           {podium.map((pick) => {
             const driver = driverByCode(pick.code, siteData.drivers);
-            const tall = pick.pos === 1;
-            const orderClass =
-              pick.pos === 1 ? "order-1 sm:order-2" : pick.pos === 2 ? "order-2 sm:order-1" : "order-3";
 
             return (
               <div
                 key={pick.code}
-                className={`border-l border-r border-black/15 px-4 ${orderClass} ${tall ? "pb-8" : "pb-4"}`}
+                className="border-l border-r border-black/15 px-4 pb-4"
                 style={{ borderLeft: `3px solid ${driver.color}` }}
               >
                 <div className="font-poster text-3xl md:text-4xl tracking-wider">P{pick.pos}</div>
-                <div
-                  className={`font-mono font-bold ${tall ? "text-6xl md:text-8xl" : "text-5xl md:text-6xl"} leading-none mt-2`}
-                >
+                <div className="font-mono font-bold text-5xl md:text-6xl leading-none mt-2">
                   {driver.code}
                 </div>
                 <div className="font-display font-bold uppercase mt-2 text-sm">{driver.name}</div>
@@ -231,7 +225,7 @@ function PredictionDetailPage() {
                   <div className="border-t border-black/10 pt-4 text-xs leading-relaxed opacity-75">
                     Model: <span className="font-mono">{modelUsed}</span>
                     <br />
-                    Status: <span className="font-mono">{status}</span>
+                    Status: <span className="font-mono">{PREDICTION_BADGE}</span>
                     <br />
                     Training rows: <span className="font-mono">{trainingData.rows}</span>
                   </div>

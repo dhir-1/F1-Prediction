@@ -26,7 +26,7 @@ function Footer() {
           FORMULA ONE . PREDICTION ARCHIVE
         </h3>
         <div className="mt-6 font-mono text-[11px] tracking-[0.3em] opacity-60 uppercase">
-          Dhir&apos;s Pit Wall . 2026
+          Pit Wall . 2026
         </div>
       </div>
     </footer>

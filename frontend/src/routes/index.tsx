@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { BlossomBranch } from "@/components/BlossomBranch";
 import { Checker } from "@/components/Checker";
 import { PageShell } from "@/components/PageShell";
-import { constructorStandings, driverByCode, standings, useSiteData } from "@/lib/data";
+import { PREDICTION_BADGE, constructorStandings, driverByCode, standings, useSiteData } from "@/lib/data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard - Dhir's Pit Wall" },
+      { title: "Dashboard - Pit Wall" },
       { name: "description", content: "2026 F1 season dashboard: next race, standings, predictions, and calendar." },
-      { property: "og:title", content: "Dashboard - Dhir's Pit Wall" },
+      { property: "og:title", content: "Dashboard - Pit Wall" },
       { property: "og:description", content: "2026 F1 season dashboard." },
     ],
   }),
@@ -71,8 +71,8 @@ function Index() {
           <div>
             <div className="text-tag mb-2">2026 Season . Race Predictions</div>
             <h1 className="font-poster italic leading-[0.85] text-[13vw] md:text-[7.5rem]">
-              <span className="block">DHIR'S</span>
-              <span className="block text-[var(--redorange)]">PIT WALL</span>
+              <span className="block">PIT</span>
+              <span className="block text-[var(--redorange)]">WALL</span>
             </h1>
             <p className="font-display uppercase tracking-[0.3em] text-sm opacity-70 mt-4 max-w-2xl">
               Formula One . Machine Learning . Season Tracker
@@ -179,7 +179,7 @@ function Index() {
                     <div>
                       <div className="font-display font-bold uppercase text-sm">{nextRacePrediction.raceName}</div>
                       <div className="font-mono text-[10px] tracking-widest uppercase opacity-50 mt-1">
-                        {nextRacePrediction.status} . {nextRacePrediction.modelUsed}
+                        {PREDICTION_BADGE} . {nextRacePrediction.modelUsed}
                       </div>
                     </div>
                     <div className="bg-[var(--redorange)] px-2 py-1 font-mono text-[8px] uppercase tracking-widest">
@@ -245,7 +245,7 @@ function Index() {
                           </div>
                         </div>
                         <div className="bg-[var(--redorange)] text-white px-2 py-1 font-mono text-[8px] tracking-wider uppercase shrink-0">
-                          {prediction.status}
+                          {PREDICTION_BADGE}
                         </div>
                       </div>
 

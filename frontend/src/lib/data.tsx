@@ -103,6 +103,8 @@ export interface SiteData {
   miamiPrediction: RacePrediction | null;
 }
 
+export const PREDICTION_BADGE = "PUBLISHED";
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 const SiteDataContext = createContext<SiteData | null>(null);
@@ -155,9 +157,7 @@ export function SiteDataProvider({ children }: { children: ReactNode }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--charcoal)] text-[var(--cream)]">
         <div className="text-center">
-          <div className="font-poster text-4xl tracking-wider animate-pulse">
-            DHIR'S <span className="text-[var(--redorange)] italic">PIT WALL</span>
-          </div>
+          <div className="font-poster text-4xl tracking-wider animate-pulse">PIT WALL</div>
           <div className="mt-4 font-mono text-[10px] tracking-[0.3em] uppercase opacity-60">
             Loading season data…
           </div>
@@ -218,15 +218,21 @@ function normalizePrediction(raw: any): RacePrediction {
           .filter(Boolean)
       : undefined;
 
+  const fallbackName = raw?.race ?? raw?.raceName ?? `round-${raw?.round ?? "0"}`;
+  const slugFromName = String(fallbackName)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
   return {
-    slug: raw?.slug ?? "monaco-grand-prix",
-    raceName: raw?.race ?? raw?.raceName ?? "Monaco Grand Prix",
-    round: Number(raw?.round ?? 6),
-    circuit: raw?.circuit ?? "Circuit de Monaco",
-    date: raw?.date ?? "2026-06-08",
+    slug: raw?.slug ?? slugFromName,
+    raceName: raw?.race ?? raw?.raceName ?? fallbackName,
+    round: Number(raw?.round ?? 0),
+    circuit: raw?.circuit ?? "",
+    date: raw?.date ?? "",
     status: raw?.qualifyingDone ? "Final Prediction" : "Pre-Qualifying Prediction",
     qualifyingDone: Boolean(raw?.qualifyingDone ?? false),
-    modelUsed: raw?.modelVersion ?? raw?.modelUsed ?? "Monaco VotingClassifier",
+    modelUsed: raw?.modelVersion ?? raw?.modelUsed ?? "Unknown",
     podium,
     grid,
     podiumProb: Object.fromEntries(podium.map((item) => [item.code, item.confidence])),
@@ -240,7 +246,7 @@ function normalizePrediction(raw: any): RacePrediction {
     trainingData: {
       races: raw?.trainingRaces ?? raw?.trainingData?.races ?? [],
       rows: Number(raw?.trainingRows ?? raw?.trainingData?.rows ?? 0),
-      cvMethod: raw?.trainingData?.cvMethod ?? raw?.modelMetrics?.estimators?.[0] ?? "VotingClassifier",
+      cvMethod: raw?.trainingData?.cvMethod ?? raw?.modelMetrics?.estimators?.[0] ?? "Unknown",
     },
     limitations: raw?.limitations ?? raw?.pitWallNotes ?? [],
     actualResult: actualResult as RacePrediction["actualResult"],

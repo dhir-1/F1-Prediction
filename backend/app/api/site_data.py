@@ -69,15 +69,19 @@ def _normalize_prediction_payload(raw: dict[str, Any]) -> dict[str, Any]:
             for key, value in raw.get("featureImportance", {}).items()
         ]
 
+        # derive a safe slug from provided slug or race name
+        raw_slug = raw.get("slug") or raw.get("race") or "prediction"
+        slug = str(raw_slug).lower().replace(" ", "-")
+
         return {
-            "slug": "monaco-grand-prix",
-            "raceName": raw.get("race", "Monaco Grand Prix"),
-            "round": raw.get("round", 6),
-            "circuit": raw.get("circuit", "Circuit de Monaco"),
-            "date": raw.get("date", "2026-06-08"),
+            "slug": slug,
+            "raceName": raw.get("race", raw.get("raceName", "")),
+            "round": raw.get("round", 0),
+            "circuit": raw.get("circuit", ""),
+            "date": raw.get("date", ""),
             "status": "Pre-Qualifying Prediction" if not raw.get("qualifyingDone") else "Final Prediction",
             "qualifyingDone": bool(raw.get("qualifyingDone", False)),
-            "modelUsed": raw.get("modelVersion", "Monaco VotingClassifier"),
+            "modelUsed": raw.get("modelVersion", raw.get("modelUsed", "Unknown")),
             "podium": podium,
             "grid": grid,
             "podiumProb": {entry["code"]: entry["confidence"] for entry in podium},
@@ -664,7 +668,10 @@ def _build_races(predictions: list[dict[str, Any]], live_results: dict[int, dict
 
     races = []
     for race in SEASON_SCHEDULE:
-        result = live_results.get(race["round"]) or prediction_results.get(race["round"])
+        # Prefer prediction-derived results from local JSON over FastF1 live results.
+        # FastF1 can return classified positions that don't match the published actuals,
+        # so when a prediction JSON contains an explicit `actualResult` we use that.
+        result = prediction_results.get(race["round"]) or live_results.get(race["round"])
         status = "completed" if result else "upcoming"
         if not result and race["round"] == next_round:
             status = "next"

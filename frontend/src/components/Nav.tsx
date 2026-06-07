@@ -12,7 +12,7 @@ export function Nav() {
     <nav className="bg-[var(--charcoal)] text-[var(--cream)] border-b border-white/10">
       <div className="w-full px-4 md:px-8 py-3 flex items-center justify-between gap-4 flex-wrap">
         <Link to="/" className="font-poster text-2xl tracking-wider">
-          DHIR'S <span className="text-[var(--redorange)] italic">PIT WALL</span>
+          PIT <span className="text-[var(--redorange)] italic">WALL</span>
         </Link>
         <div className="flex items-center gap-1 flex-wrap">
           {links.map((l) => (

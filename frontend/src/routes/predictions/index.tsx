@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Checker } from "@/components/Checker";
 import { PageShell } from "@/components/PageShell";
-import { driverByCode, useSiteData } from "@/lib/data";
+import { PREDICTION_BADGE, driverByCode, useSiteData } from "@/lib/data";
 
 export const Route = createFileRoute("/predictions/")({
   head: () => ({
     meta: [
-      { title: "Race Predictions - Dhir's Pit Wall" },
+      { title: "Race Predictions - Pit Wall" },
       { name: "description", content: "All published machine learning race predictions for the 2026 F1 season." },
     ],
   }),
@@ -61,7 +61,7 @@ function PredictionsBoard() {
                         </h3>
                       </div>
                       <div className="bg-black text-white px-3 py-1 font-mono text-[9px] tracking-wider uppercase shrink-0">
-                        {pred.status}
+                        {PREDICTION_BADGE}
                       </div>
                     </div>
                     

@@ -232,11 +232,11 @@
     "rows": 110,
     "cvMethod": "Optuna \u00b7 5-fold \u00b7 f1"
   },
-  "actualResult": {
-    "P1": "ANT",
-    "P2": "HAM",
-    "P3": "HAD"
-  },
+  "actualResult": [
+    {"pos": 1, "driver": "ANT"},
+    {"pos": 2, "driver": "HAM"},
+    {"pos": 3, "driver": "HAD"}
+],
   "pitWallNotes": [
     "Monaco 2026: Active aero disabled by FIA \u2014 mechanical grip only.",
     "Boost Button is the primary overtake mechanism: Portier \u2192 Nouvelle Chicane.",
