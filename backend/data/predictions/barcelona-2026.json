@@ -1,0 +1,261 @@
+{
+  "slug": "barcelona-grand-prix",
+  "raceName": "Barcelona-Catalunya Grand Prix",
+  "round": 7,
+  "circuit": "Circuit de Barcelona-Catalunya",
+  "date": "2026-06-14",
+  "status": "Final Prediction",
+  "qualifyingDone": true,
+  "modelUsed": "CalibratedClassifierCV -> VotingClassifier (XGBClassifier [Optuna 60 trials] + LGBMClassifier [GridSearchCV]) -- XGBClassifier led ensemble",
+  "predictedPodium": [
+    {
+      "pos": 1,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "confidence": 77.7
+    },
+    {
+      "pos": 2,
+      "driver": "HAM",
+      "team": "Ferrari",
+      "confidence": 76.3
+    },
+    {
+      "pos": 3,
+      "driver": "GAS",
+      "team": "Alpine",
+      "confidence": 57.0
+    }
+  ],
+  "fullGrid": [
+    {
+      "position": 1,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "podiumProb": 77.7,
+      "gridPosition": 3
+    },
+    {
+      "position": 2,
+      "driver": "HAM",
+      "team": "Ferrari",
+      "podiumProb": 76.3,
+      "gridPosition": 2
+    },
+    {
+      "position": 3,
+      "driver": "GAS",
+      "team": "Alpine",
+      "podiumProb": 57.0,
+      "gridPosition": 14
+    },
+    {
+      "position": 4,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "podiumProb": 13.2,
+      "gridPosition": 1
+    },
+    {
+      "position": 5,
+      "driver": "LEC",
+      "team": "Ferrari",
+      "podiumProb": 8.3,
+      "gridPosition": 10
+    },
+    {
+      "position": 6,
+      "driver": "NOR",
+      "team": "McLaren",
+      "podiumProb": 7.9,
+      "gridPosition": 4
+    },
+    {
+      "position": 7,
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "podiumProb": 7.1,
+      "gridPosition": 5
+    },
+    {
+      "position": 8,
+      "driver": "PIA",
+      "team": "McLaren",
+      "podiumProb": 6.9,
+      "gridPosition": 7
+    },
+    {
+      "position": 9,
+      "driver": "HAD",
+      "team": "Red Bull Racing",
+      "podiumProb": 6.5,
+      "gridPosition": 6
+    },
+    {
+      "position": 10,
+      "driver": "ALB",
+      "team": "Williams",
+      "podiumProb": 4.3,
+      "gridPosition": 18
+    },
+    {
+      "position": 11,
+      "driver": "LIN",
+      "team": "Racing Bulls",
+      "podiumProb": 4.0,
+      "gridPosition": 11
+    },
+    {
+      "position": 12,
+      "driver": "STR",
+      "team": "Aston Martin",
+      "podiumProb": 4.0,
+      "gridPosition": 21
+    },
+    {
+      "position": 13,
+      "driver": "LAW",
+      "team": "Racing Bulls",
+      "podiumProb": 3.9,
+      "gridPosition": 8
+    },
+    {
+      "position": 14,
+      "driver": "HUL",
+      "team": "Audi",
+      "podiumProb": 3.8,
+      "gridPosition": 9
+    },
+    {
+      "position": 15,
+      "driver": "BEA",
+      "team": "Haas F1 Team",
+      "podiumProb": 3.8,
+      "gridPosition": 15
+    },
+    {
+      "position": 16,
+      "driver": "ALO",
+      "team": "Aston Martin",
+      "podiumProb": 3.8,
+      "gridPosition": 22
+    },
+    {
+      "position": 17,
+      "driver": "BOR",
+      "team": "Audi",
+      "podiumProb": 3.8,
+      "gridPosition": 12
+    },
+    {
+      "position": 18,
+      "driver": "OCO",
+      "team": "Haas F1 Team",
+      "podiumProb": 3.7,
+      "gridPosition": 17
+    },
+    {
+      "position": 19,
+      "driver": "COL",
+      "team": "Alpine",
+      "podiumProb": 3.7,
+      "gridPosition": 13
+    },
+    {
+      "position": 20,
+      "driver": "PER",
+      "team": "Cadillac",
+      "podiumProb": 3.7,
+      "gridPosition": 19
+    },
+    {
+      "position": 21,
+      "driver": "BOT",
+      "team": "Cadillac",
+      "podiumProb": 3.6,
+      "gridPosition": 20
+    },
+    {
+      "position": 22,
+      "driver": "SAI",
+      "team": "Williams",
+      "podiumProb": 3.5,
+      "gridPosition": 16
+    }
+  ],
+  "features": [
+    "grid_position",
+    "grid_position_squared",
+    "avg_finish_last3",
+    "finish_trend",
+    "rolling_podium_rate",
+    "avg_lap_time_delta",
+    "tyre_consistency",
+    "constructor_avg_finish",
+    "dnf_rate",
+    "high_speed_circuit_avg_finish"
+  ],
+  "featureImportances": {
+    "grid_position": 19.1,
+    "grid_position_squared": 17.6,
+    "avg_finish_last3": 3.1,
+    "finish_trend": 6.0,
+    "rolling_podium_rate": 28.3,
+    "avg_lap_time_delta": 14.7,
+    "tyre_consistency": 1.7,
+    "constructor_avg_finish": 8.7,
+    "dnf_rate": 0.0,
+    "high_speed_circuit_avg_finish": 0.9
+  },
+  "modelMetrics": {
+    "cvFolds": 5,
+    "cvScoring": "f1",
+    "calibration": "CalibratedClassifierCV sigmoid cv=None",
+    "tuning": {
+      "XGBClassifier": {
+        "method": "Optuna 60 trials",
+        "cv_f1": 0.8413
+      },
+      "LGBMClassifier": {
+        "method": "GridSearchCV exhaustive",
+        "cv_f1": 0.8325
+      },
+      "winner": "XGBClassifier"
+    }
+  },
+  "trainingData": {
+    "races": [
+      "Australia",
+      "China",
+      "Japan",
+      "Miami",
+      "Canada",
+      "Monaco"
+    ],
+    "rows": 132,
+    "cvMethod": "XGB: Optuna 60 trials + LGBM: GridSearchCV + 5-fold + f1"
+  },
+  "actualResult": {
+    "P1": "",
+    "P2": "",
+    "P3": ""
+  },
+  "pitWallNotes": [
+    "Barcelona 2026: High-deg circuit -- C2/C3/C4, one step softer than usual.",
+    "No DRS -- Straight Mode zones replace it on main straight and Turn 3 exit.",
+    "grid_position_squared added -- exponentially penalises GAS P14 (196) vs RUS P1 (1).",
+    "rolling_podium_rate: ANT=1.00, HAM=0.50, RUS=0.17, NOR=0.17 -- clean podium signal.",
+    "dnf_rate: NOR and VER both at 0.33 (2 DNFs in 6 races) after Monaco retirements.",
+    "high_speed_circuit_avg_finish filters Monaco + Canada -- only AUS, JPN, CHN counted.",
+    "tyre_consistency = std-dev of clean laps -- front-left deg decisive at Barcelona.",
+    "avg_lap_time_delta: Barcelona Q3 qualifying.",
+    "Tuning: XGB Optuna f1=0.8413 vs LGBM GridSearch f1=0.8325 -- XGBClassifier led.",
+    "6 training races (132 rows) -- most data Pit Wall has had this season."
+  ],
+  "limitations": [
+    "132 training rows -- midfield P4-P8 probabilities will compress.",
+    "high_speed_circuit_avg_finish based on only 3 races (AUS, JPN, CHN).",
+    "No weather feature -- Barcelona June is deterministically sunny.",
+    "rolling_podium_rate favours consistent winners -- may underrate one-off podium threats."
+  ]
+}

@@ -1,0 +1,288 @@
+{
+  "slug": "british-grand-prix",
+  "raceName": "British Grand Prix",
+  "round": 9,
+  "circuit": "Silverstone Circuit",
+  "date": "2026-07-05",
+  "status": "Final Prediction",
+  "qualifyingDone": true,
+  "sprintWeekend": true,
+  "modelUsed": "CalibratedClassifierCV (StratifiedKFold5) -> VotingClassifier (XGBClassifier [Optuna] + LGBMClassifier [Optuna]) + smooth grid floor P9+",
+  "predictedPodium": [
+    {
+      "pos": 1,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "confidence": 71.7
+    },
+    {
+      "pos": 2,
+      "driver": "NOR",
+      "team": "McLaren",
+      "confidence": 53.6
+    },
+    {
+      "pos": 3,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "confidence": 40.9
+    }
+  ],
+  "fullGrid": [
+    {
+      "position": 1,
+      "driver": "RUS",
+      "team": "Mercedes",
+      "podiumProb": 71.7,
+      "gridPosition": 4,
+      "sprintPosition": 4
+    },
+    {
+      "position": 2,
+      "driver": "NOR",
+      "team": "McLaren",
+      "podiumProb": 53.6,
+      "gridPosition": 6,
+      "sprintPosition": 3
+    },
+    {
+      "position": 3,
+      "driver": "ANT",
+      "team": "Mercedes",
+      "podiumProb": 40.9,
+      "gridPosition": 1,
+      "sprintPosition": 1
+    },
+    {
+      "position": 4,
+      "driver": "VER",
+      "team": "Red Bull Racing",
+      "podiumProb": 38.2,
+      "gridPosition": 7,
+      "sprintPosition": 6
+    },
+    {
+      "position": 5,
+      "driver": "HAM",
+      "team": "Ferrari",
+      "podiumProb": 29.7,
+      "gridPosition": 3,
+      "sprintPosition": 2
+    },
+    {
+      "position": 6,
+      "driver": "LEC",
+      "team": "Ferrari",
+      "podiumProb": 27.5,
+      "gridPosition": 2,
+      "sprintPosition": 5
+    },
+    {
+      "position": 7,
+      "driver": "PIA",
+      "team": "McLaren",
+      "podiumProb": 19.5,
+      "gridPosition": 8,
+      "sprintPosition": 7
+    },
+    {
+      "position": 8,
+      "driver": "HAD",
+      "team": "Red Bull Racing",
+      "podiumProb": 17.3,
+      "gridPosition": 5,
+      "sprintPosition": 12
+    },
+    {
+      "position": 9,
+      "driver": "LIN",
+      "team": "Racing Bulls",
+      "podiumProb": 4.1,
+      "gridPosition": 9,
+      "sprintPosition": 9
+    },
+    {
+      "position": 10,
+      "driver": "LAW",
+      "team": "Racing Bulls",
+      "podiumProb": 2.2,
+      "gridPosition": 10,
+      "sprintPosition": 8
+    },
+    {
+      "position": 11,
+      "driver": "BOR",
+      "team": "Audi",
+      "podiumProb": 2.1,
+      "gridPosition": 11,
+      "sprintPosition": 10
+    },
+    {
+      "position": 12,
+      "driver": "HUL",
+      "team": "Audi",
+      "podiumProb": 1.4,
+      "gridPosition": 12,
+      "sprintPosition": 13
+    },
+    {
+      "position": 13,
+      "driver": "BEA",
+      "team": "Haas F1 Team",
+      "podiumProb": 1.2,
+      "gridPosition": 13,
+      "sprintPosition": 14
+    },
+    {
+      "position": 14,
+      "driver": "SAI",
+      "team": "Williams",
+      "podiumProb": 1.0,
+      "gridPosition": 14,
+      "sprintPosition": 15
+    },
+    {
+      "position": 15,
+      "driver": "GAS",
+      "team": "Alpine",
+      "podiumProb": 0.9,
+      "gridPosition": 15,
+      "sprintPosition": 11
+    },
+    {
+      "position": 16,
+      "driver": "ALB",
+      "team": "Williams",
+      "podiumProb": 0.6,
+      "gridPosition": 16,
+      "sprintPosition": 17
+    },
+    {
+      "position": 17,
+      "driver": "OCO",
+      "team": "Haas F1 Team",
+      "podiumProb": 0.5,
+      "gridPosition": 17,
+      "sprintPosition": 18
+    },
+    {
+      "position": 18,
+      "driver": "BOT",
+      "team": "Cadillac",
+      "podiumProb": 0.4,
+      "gridPosition": 18,
+      "sprintPosition": 20
+    },
+    {
+      "position": 19,
+      "driver": "COL",
+      "team": "Alpine",
+      "podiumProb": 0.4,
+      "gridPosition": 19,
+      "sprintPosition": 16
+    },
+    {
+      "position": 20,
+      "driver": "PER",
+      "team": "Cadillac",
+      "podiumProb": 0.3,
+      "gridPosition": 20,
+      "sprintPosition": 22
+    },
+    {
+      "position": 21,
+      "driver": "STR",
+      "team": "Aston Martin",
+      "podiumProb": 0.3,
+      "gridPosition": 21,
+      "sprintPosition": 21
+    },
+    {
+      "position": 22,
+      "driver": "ALO",
+      "team": "Aston Martin",
+      "podiumProb": 0.2,
+      "gridPosition": 22,
+      "sprintPosition": 19
+    }
+  ],
+  "features": [
+    "grid_position",
+    "avg_finish_last3",
+    "finish_trend",
+    "sprint_position",
+    "avg_lap_time_delta",
+    "tyre_consistency",
+    "constructor_avg_finish",
+    "dnf_rate"
+  ],
+  "featureImportances": {
+    "grid_position": 38.8,
+    "avg_finish_last3": 1.1,
+    "finish_trend": 7.3,
+    "sprint_position": 4.5,
+    "avg_lap_time_delta": 25.2,
+    "tyre_consistency": 5.1,
+    "constructor_avg_finish": 15.0,
+    "dnf_rate": 3.1
+  },
+  "modelMetrics": {
+    "cvFolds": 5,
+    "cvScoring": "f1",
+    "calibration": "CalibratedClassifierCV sigmoid, StratifiedKFold(5)",
+    "gridFloor": "P9+ -> exponential decay (rate=0.2)",
+    "tuning": {
+      "XGBClassifier": {
+        "method": "Optuna 30 trials",
+        "cv_f1": 0.7
+      },
+      "LGBMClassifier": {
+        "method": "Optuna 30 trials",
+        "cv_f1": 0.6744
+      },
+      "winner": "XGBClassifier"
+    }
+  },
+  "trainingData": {
+    "races": [
+      "Australia",
+      "China",
+      "Japan",
+      "Miami",
+      "Canada",
+      "Monaco",
+      "Barcelona",
+      "Austria"
+    ],
+    "rows": 176
+  },
+  "sprintResults": {
+    "ANT": 1,
+    "HAM": 2,
+    "NOR": 3,
+    "RUS": 4,
+    "LEC": 5,
+    "VER": 6,
+    "PIA": 7,
+    "LAW": 8,
+    "HAD": 12,
+    "LIN": 9,
+    "HUL": 13,
+    "BOR": 10,
+    "SAI": 15,
+    "BEA": 14,
+    "GAS": 11,
+    "COL": 16,
+    "ALB": 17,
+    "OCO": 18,
+    "PER": 22,
+    "BOT": 20,
+    "STR": 21,
+    "ALO": 19
+  },
+  "actualResult": {
+    "P1": "",
+    "P2": "",
+    "P3": ""
+  }
+}

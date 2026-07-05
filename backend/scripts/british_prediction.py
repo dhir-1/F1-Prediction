@@ -1,4 +1,8 @@
-﻿import json
+"""
+british_prediction.py — Dhir's Pit Wall · Round 9 · British Grand Prix · July 5, 2026
+"""
+
+import json
 import warnings
 from pathlib import Path
 
@@ -17,17 +21,24 @@ from xgboost import XGBClassifier
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 warnings.filterwarnings("ignore")
 
-QUALIFYING_DONE = True
+
+# =============================================================================
+# SECTION 0 — SETTINGS  (only things you ever need to change)
+# =============================================================================
+
+QUALIFYING_DONE   = True
 USE_GRID_POSITION = True
-IS_SPRINT = True
+IS_SPRINT         = True
 
 ROUND_NUMBER = 9
-RACE_NAME = "British Grand Prix"
-CIRCUIT = "Silverstone Circuit"
-RACE_DATE = "2026-07-05"
+RACE_NAME    = "British Grand Prix"
+CIRCUIT      = "Silverstone Circuit"
+RACE_DATE    = "2026-07-05"
 
-CACHE_DIR = Path(r"C:\Users\dhira\Desktop\Projects\F1 Dashboard\backend\data\fastf1_cache")
+# ── CHANGE THIS TO YOUR ACTUAL PATH ──────────────────────────────────────────
+CACHE_DIR   = Path(r"C:\Users\dhira\Desktop\Projects\F1 Dashboard\backend\data\fastf1_cache")
 OUTPUT_FILE = Path(r"C:\Users\dhira\Desktop\Projects\F1 Dashboard\backend\data\predictions\british-2026.json")
+# ─────────────────────────────────────────────────────────────────────────────
 
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -35,13 +46,13 @@ fastf1.Cache.enable_cache(str(CACHE_DIR))
 
 TRAINING_RACES = [
     (2026, "Australia", "R"),
-    (2026, "China", "R"),
-    (2026, "Japan", "R"),
-    (2026, "Miami", "R"),
-    (2026, "Canada", "R"),
-    (2026, "Monaco", "R"),
+    (2026, "China",     "R"),
+    (2026, "Japan",     "R"),
+    (2026, "Miami",     "R"),
+    (2026, "Canada",    "R"),
+    (2026, "Monaco",    "R"),
     (2026, "Barcelona", "R"),
-    (2026, "Austria", "R"),
+    (2026, "Austria",   "R"),
 ]
 
 BRITISH_SPRINT_RESULTS = {
@@ -69,11 +80,15 @@ CV_SCORING = "f1"
 N_OPTUNA = 30
 RANDOM_SEED = 42
 
+
+# =============================================================================
+# SECTION 1 — FEATURES
+# =============================================================================
+
 _ALL_FEATURES = [
     "grid_position",
     "avg_finish_last3",
     "finish_trend",
-    "rolling_podium_rate",
     "sprint_position",
     "avg_lap_time_delta",
     "tyre_consistency",
@@ -90,6 +105,10 @@ def get_feature_cols():
         excluded.append("sprint_position")
     return [f for f in _ALL_FEATURES if f not in excluded]
 
+
+# =============================================================================
+# SECTION 2 — LOAD QUALIFYING DELTAS + FP2 RACE-PACE PROXY
+# =============================================================================
 
 def load_quali_delta():
     if not QUALIFYING_DONE:
@@ -171,6 +190,10 @@ def load_sprint_positions(year, race):
         return {}
 
 
+# =============================================================================
+# SECTION 3 — COMPUTE PER-RACE FEATURES  (loads its own sessions fresh)
+# =============================================================================
+
 def compute_race_features():
     all_rows = []
     for p in sorted(CACHE_DIR.rglob("*"), key=lambda x: len(x.parts), reverse=True):
@@ -245,6 +268,10 @@ def compute_race_features():
     return df
 
 
+# =============================================================================
+# SECTION 4 — ROLLING FEATURES
+# =============================================================================
+
 def compute_trend(series):
     vals, trends = series.values, [0.0]
     for i in range(1, len(vals)):
@@ -287,6 +314,10 @@ def add_rolling_features(df):
 
     return df
 
+
+# =============================================================================
+# SECTION 5 — OPTUNA TUNING
+# =============================================================================
 
 def tune_xgb(X, y):
     spw = (y == 0).sum() / max((y == 1).sum(), 1)
@@ -345,6 +376,10 @@ def tune_lgbm(X, y):
     return best, round(study.best_value, 4)
 
 
+# =============================================================================
+# SECTION 6 — BUILD INFERENCE ROWS
+# =============================================================================
+
 def build_british_rows(df, quali_deltas, race_pace_deltas):
     feature_cols = get_feature_cols()
     austria = fastf1.get_session(2026, "Austria", "R")
@@ -375,7 +410,6 @@ def build_british_rows(df, quali_deltas, race_pace_deltas):
             "grid_position": grid_pos,
             "avg_finish_last3": float(last["avg_finish_last3"]),
             "finish_trend": float(last["finish_trend"]),
-            "rolling_podium_rate": float(last["rolling_podium_rate"]),
             "sprint_position": BRITISH_SPRINT_RESULTS.get(code, np.nan),
             "avg_lap_time_delta": lap_delta,
             "tyre_consistency": float(last["tyre_consistency"]),
@@ -387,12 +421,13 @@ def build_british_rows(df, quali_deltas, race_pace_deltas):
     return pd.DataFrame(rows)
 
 
+# =============================================================================
+# SECTION 7 — PREDICT + GRID FLOOR
+# =============================================================================
+
 def predict_british(voting_clf, best_xgb, british_df, X_train, y_train):
     feature_cols = get_feature_cols()
     X_inf = british_df[feature_cols].values
-
-    print("\n  Raw feature vectors going into prediction:")
-    print(british_df[["driver"] + feature_cols].to_string(index=False))
 
     cal_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_SEED)
     calibrated = CalibratedClassifierCV(estimator=voting_clf, method="sigmoid", cv=cal_cv)
@@ -429,6 +464,10 @@ def predict_british(voting_clf, best_xgb, british_df, X_train, y_train):
     ]
     return full_grid, importances
 
+
+# =============================================================================
+# SECTION 8 — SAVE JSON
+# =============================================================================
 
 def save_json(full_grid, importances, feature_cols, xgb_f1, lgbm_f1, quali_used, race_pace_used):
     podium = full_grid[:3]
@@ -478,6 +517,10 @@ def save_json(full_grid, importances, feature_cols, xgb_f1, lgbm_f1, quali_used,
         json.dump(output, f, indent=2)
     print(f"\n  Saved -> {OUTPUT_FILE}")
 
+
+# =============================================================================
+# MAIN
+# =============================================================================
 
 def main():
     feature_cols = get_feature_cols()
